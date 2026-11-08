@@ -1,1 +1,781 @@
 
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Go to Wonderland</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b25;color:white;font-family:Arial,sans-serif;touch-action:none}
+#game{position:relative;width:100vw;height:100dvh;overflow:hidden;background:#172b35}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+#topbar{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px}
+.panel{background:#14232bdc;border:2px solid #718e79;border-radius:9px;padding:7px 10px;box-shadow:0 3px 0 #09141b}
+#stats{font-size:12px;line-height:1.7;min-width:145px}
+.bar{height:8px;background:#26353b;border-radius:8px;overflow:hidden;margin:2px 0 5px}
+.fill{height:100%;width:100%;background:#e65a55}
+#manaFill{background:#56a8ed}
+#level{font-weight:bold;color:#ffe28a}
+#rightbar{display:flex;gap:5px;pointer-events:auto}
+.uiBtn{border:2px solid #819b83;background:#243b3b;color:white;border-radius:8px;padding:8px 10px;font-weight:bold}
+#message{position:absolute;top:25%;left:50%;transform:translateX(-50%);background:#14232be8;border:2px solid #e6d18b;border-radius:9px;padding:10px 16px;text-align:center;display:none;max-width:85%;font-size:14px}
+#controls{position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
+#moveControls,#actionControls{display:flex;gap:9px;align-items:flex-end;pointer-events:auto}
+.control{width:58px;height:58px;border-radius:50%;border:2px solid #b7d4b2;background:#172b35c9;color:white;font-size:23px;font-weight:bold;box-shadow:0 4px 0 #07151b;touch-action:none}
+.control:active,.control.active{background:#648c68}
+.control.small{width:48px;height:48px;font-size:17px}
+#attack{width:68px;height:68px;background:#9d453b}
+#jump{background:#456d9d}
+#menu{position:absolute;inset:0;background:linear-gradient(#142b36dd,#101c27f5);display:flex;align-items:center;justify-content:center;text-align:center;padding:18px}
+#menuCard{width:min(440px,95%);padding:24px 18px;border:3px solid #9bb58c;border-radius:18px;background:#1d3436;box-shadow:0 9px 0 #0c171d}
+h1{font-size:clamp(27px,7vw,44px);margin:0 0 8px;color:#ffe69a;text-shadow:3px 3px #6c4934}
+#menu p{color:#d3e5cf;line-height:1.5;font-size:14px}
+#start{font-size:18px;padding:13px 30px;background:#7baf65;border:0;border-radius:10px;color:#102018;font-weight:bold;box-shadow:0 5px #426a43}
+#inventory{display:none;position:absolute;inset:10%;background:#172a31f5;border:3px solid #a5bd91;border-radius:14px;padding:16px;overflow:auto}
+#inventory h2{color:#ffe69a;margin-top:0}
+#items{line-height:2}
+#closeInv{float:right}
+#bossBox{position:absolute;top:75px;left:15%;right:15%;display:none;text-align:center;font-size:12px}
+#bossBar{height:10px;background:#38252a;border:1px solid #e8b4a1;border-radius:10px;overflow:hidden}
+#bossFill{height:100%;width:100%;background:#c7474c}
+@media(orientation:portrait){
+#menuCard{padding:17px 12px}
+#controls{bottom:8px}
+.control{width:52px;height:52px}
+#attack{width:62px;height:62px}
+}
+</style>
+</head>
+<body>
+<div id="game">
+<canvas id="screen"></canvas>
+
+<div id="topbar">
+ <div class="panel" id="stats">
+  <div><span id="level">Cấp 1</span> · <span id="gold">0 vàng</span></div>
+  <div>HP</div><div class="bar"><div class="fill" id="hpFill"></div></div>
+  <div>MP</div><div class="bar"><div class="fill" id="manaFill"></div></div>
+  <div id="xpText">EXP 0 / 30</div>
+ </div>
+ <div id="rightbar">
+  <button class="uiBtn" id="bagBtn">🎒 Túi</button>
+  <button class="uiBtn" id="soundBtn">🔊</button>
+  <button class="uiBtn" id="pauseBtn">Ⅱ</button>
+ </div>
+</div>
+
+<div id="bossBox">
+ <div id="bossName">KẺ CANH GIỮ RỪNG</div>
+ <div id="bossBar"><div id="bossFill"></div></div>
+</div>
+<div id="message"></div>
+
+<div id="controls">
+ <div id="moveControls">
+  <button class="control" id="left">◀</button>
+  <button class="control" id="right">▶</button>
+ </div>
+ <div id="actionControls">
+  <button class="control small" id="dash">⚡</button>
+  <button class="control" id="jump">⬆</button>
+  <button class="control" id="attack">⚔</button>
+ </div>
+</div>
+
+<div id="inventory">
+ <button class="uiBtn" id="closeInv">Đóng ✕</button>
+ <h2>🎒 Túi đồ</h2>
+ <div id="items">Chưa có vật phẩm.</div>
+ <p>💡 Thu thập vật phẩm trên đường phiêu lưu.</p>
+</div>
+
+<div id="menu">
+ <div id="menuCard">
+  <div style="font-size:48px">🌲⚔️✨</div>
+  <h1>GO TO<br>WONDERLAND</h1>
+  <p>Một thế giới phép thuật đang chờ bạn khám phá.<br>
+  Chiến đấu · Khám phá · Lên cấp · Đánh bại Boss</p>
+  <button id="start">BẮT ĐẦU PHIÊU LƯU</button>
+  <p style="font-size:11px">Khuyên dùng màn hình ngang để chơi.</p>
+ </div>
+</div>
+</div>
+
+<script>
+"use strict";
+const canvas=document.getElementById("screen");
+const ctx=canvas.getContext("2d");
+const $=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+function resize(){
+ W=window.innerWidth; H=window.innerHeight;
+ DPR=Math.min(window.devicePixelRatio||1,1.25);
+ canvas.width=Math.floor(W*DPR);
+ canvas.height=Math.floor(H*DPR);
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize",resize);
+resize();
+
+const WORLD=6200;
+let running=false,paused=false,last=0,camera=0;
+let soundOn=true,audio=null;
+let keys={left:false,right:false};
+let inventory=[],particles=[],enemies=[],gems=[],platforms=[];
+let gameTime=0,shake=0,messageTimer=0,saveTimer=0;
+let gold=0,level=1,xp=0,nextXP=30,potions=3;
+
+const player={
+ x:100,y:100,w:28,h:42,vx:0,vy:0,
+ hp:100,maxHp:100,mp:60,maxMp:60,
+ facing:1,onGround:false,attack:0,dash:0,
+ invincible:0,walk:0
+};
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rand(a,b){return a+Math.random()*(b-a)}
+function groundY(){return H-75}
+function showMessage(t){
+ $("message").textContent=t;
+ $("message").style.display="block";
+ messageTimer=2.2;
+}
+function updateHUD(){
+ $("level").textContent="Cấp "+level;
+ $("gold").textContent=gold+" vàng";
+ $("hpFill").style.width=(player.hp/player.maxHp*100)+"%";
+ $("manaFill").style.width=(player.mp/player.maxMp*100)+"%";
+ $("xpText").textContent="EXP "+xp+" / "+nextXP;
+ $("items").innerHTML=
+ "🧪 Bình máu: "+potions+"<br>"+
+ "🪙 Vàng: "+gold+"<br>"+
+ "⭐ Cấp độ: "+level+"<br>"+
+ "🎒 Vật phẩm: "+(inventory.length?inventory.join(", "):"Chưa có");
+}
+
+// ===== PHẦN 2: THẾ GIỚI VÀ CHIẾN ĐẤU =====
+
+const ground=()=>{
+ return groundY();
+};
+
+function makeWorld(){
+ platforms=[
+  {x:440,y:ground()-90,w:150,h:15},
+  {x:850,y:ground()-135,w:180,h:15},
+  {x:1350,y:ground()-85,w:190,h:15},
+  {x:1900,y:ground()-140,w:170,h:15},
+  {x:2550,y:ground()-100,w:220,h:15},
+  {x:3250,y:ground()-150,w:190,h:15},
+  {x:4000,y:ground()-100,w:220,h:15},
+  {x:4900,y:ground()-145,w:200,h:15}
+ ];
+
+ enemies=[];
+ for(let i=0;i<30;i++){
+  const x=500+i*175;
+  enemies.push({
+   x,y:ground()-34,w:30,h:30,
+   hp:30+level*4,maxHp:30+level*4,
+   speed:rand(25,48),dir:Math.random()<.5?-1:1,
+   type:i%5===0?"goblin":"slime",
+   hit:0,alive:true
+  });
+ }
+
+ gems=[];
+ for(let i=0;i<55;i++){
+  gems.push({
+   x:rand(250,WORLD-100),
+   y:ground()-rand(35,125),
+   taken:false,
+   type:Math.random()<.2?"potion":"gold"
+  });
+ }
+}
+makeWorld();
+
+function addParticle(x,y,color,count=7){
+ for(let i=0;i<count;i++){
+  particles.push({
+   x,y,vx:rand(-100,100),vy:rand(-130,30),
+   life:rand(.25,.6),max:.6,size:rand(2,5),color
+  });
+ }
+}
+
+function playSound(freq=300,duration=.08){
+ if(!soundOn)return;
+ try{
+  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==="suspended")audio.resume();
+  const o=audio.createOscillator();
+  const g=audio.createGain();
+  o.frequency.value=freq;
+  o.type="square";
+  g.gain.setValueAtTime(.04,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);
+  o.connect(g);g.connect(audio.destination);
+  o.start();o.stop(audio.currentTime+duration);
+ }catch(e){}
+}
+
+function gainXP(amount){
+ xp+=amount;
+ while(xp>=nextXP){
+  xp-=nextXP;
+  level++;
+  nextXP=Math.floor(nextXP*1.35);
+  player.maxHp+=12;
+  player.maxMp+=5;
+  player.hp=player.maxHp;
+  player.mp=player.maxMp;
+  showMessage("✨ LÊN CẤP "+level+"!");
+  playSound(700,.2);
+ }
+ updateHUD();
+}
+
+function attack(){
+ if(!running||paused||player.attack>0)return;
+ player.attack=.25;
+ playSound(170,.09);
+ let hit=false;
+ for(const e of enemies){
+  if(!e.alive)continue;
+  const dx=e.x-player.x;
+  const near=Math.abs(dx)<65;
+  const front=dx*player.facing>=-8;
+  if(near&&front&&Math.abs(e.y-player.y)<55){
+   e.hp-=20+level*4;
+   e.hit=.16;
+   addParticle(e.x+15,e.y+12,"#ffe19a",8);
+   hit=true;
+   if(e.hp<=0){
+    e.alive=false;
+    gold+=5+Math.floor(rand(0,8));
+    gainXP(12);
+    if(Math.random()<.25)inventory.push("Mảnh tinh thể");
+    showMessage("Đã đánh bại quái vật!");
+   }
+  }
+ }
+ if(hit)shake=3;
+ updateHUD();
+}
+
+function jump(){
+ if(!running||paused)return;
+ if(player.onGround){
+  player.vy=-480;
+  player.onGround=false;
+  playSound(400,.07);
+ }
+}
+
+function dash(){
+ if(!running||paused||player.dash>0||player.mp<8)return;
+ player.dash=.22;
+ player.mp-=8;
+ player.invincible=.25;
+ player.vx=player.facing*520;
+ addParticle(player.x+14,player.y+25,"#9de9ff",8);
+ playSound(500,.06);
+ updateHUD();
+}
+
+function usePotion(){
+ if(potions<=0){showMessage("Bạn đã hết bình máu!");return;}
+ if(player.hp>=player.maxHp){showMessage("Máu đang đầy!");return;}
+ potions--;
+ player.hp=Math.min(player.maxHp,player.hp+45);
+ showMessage("Đã hồi 45 HP!");
+ playSound(600,.1);
+ updateHUD();
+}
+
+function updatePlayer(dt){
+ if(player.invincible>0)player.invincible-=dt;
+ if(player.attack>0)player.attack-=dt;
+ if(player.dash>0)player.dash-=dt;
+
+ if(player.dash<=0){
+  let move=0;
+  if(keys.left)move--;
+  if(keys.right)move++;
+  player.vx=move*190;
+  if(move!==0){
+   player.facing=move;
+   player.walk+=dt*10;
+  }
+ }
+
+ player.x+=player.vx*dt;
+ player.x=clamp(player.x,0,WORLD-player.w);
+
+ if(player.dash<=0){
+  player.vy+=1250*dt;
+ }
+ player.y+=player.vy*dt;
+
+ const floor=ground()-player.h;
+ if(player.y>=floor){
+  player.y=floor;
+  player.vy=0;
+  player.onGround=true;
+ }else{
+  player.onGround=false;
+ }
+
+ for(const p of platforms){
+  if(player.vy>=0&&
+   player.x+player.w>p.x&&player.x<p.x+p.w&&
+   player.y+player.h>=p.y&&player.y+player.h<=p.y+20){
+    player.y=p.y-player.h;
+    player.vy=0;
+    player.onGround=true;
+  }
+ }
+
+ player.mp=Math.min(player.maxMp,player.mp+2*dt);
+}
+
+function updateEnemies(dt){
+ for(const e of enemies){
+  if(!e.alive)continue;
+  if(e.hit>0)e.hit-=dt;
+  const distance=player.x-e.x;
+  if(Math.abs(distance)<260){
+   e.dir=distance>0?1:-1;
+   e.x+=e.dir*e.speed*dt;
+  }else{
+   e.x+=e.dir*e.speed*.25*dt;
+  }
+  e.x=clamp(e.x,0,WORLD-e.w);
+
+  if(Math.abs(player.x-e.x)<35&&
+     Math.abs(player.y-e.y)<40&&
+     player.invincible<=0){
+    player.hp-=12;
+    player.invincible=.8;
+    shake=6;
+    addParticle(player.x+14,player.y+20,"#ff7777",8);
+    showMessage("Bạn bị trúng đòn!");
+    if(player.hp<=0){
+     player.hp=0;
+     running=false;
+     $("menu").style.display="flex";
+     $("menuCard").innerHTML=
+      "<h1>BẠN ĐÃ THẤT BẠI</h1>"+
+      "<p>Đừng bỏ cuộc! Hãy thử lại nhé.</p>"+
+      '<button id="start" onclick="restartGame()">CHƠI LẠI</button>';
+    }
+    updateHUD();
+   }
+ }
+}
+
+function updateGems(){
+ for(const g of gems){
+  if(g.taken)continue;
+  if(Math.abs(g.x-player.x)<32&&Math.abs(g.y-player.y)<55){
+   g.taken=true;
+   if(g.type==="gold"){
+    gold+=rand(3,10)|0;
+    showMessage("🪙 Nhặt được vàng!");
+   }else{
+    potions++;
+    showMessage("🧪 Nhặt được bình máu!");
+   }
+   playSound(800,.06);
+   updateHUD();
+  }
+ }
+}
+
+function updateParticles(dt){
+ for(const p of particles){
+  p.x+=p.vx*dt;
+  p.y+=p.vy*dt;
+  p.vy+=250*dt;
+  p.life-=dt;
+ }
+ particles=particles.filter(p=>p.life>0);
+}
+
+function drawSky(){
+ const gradient=ctx.createLinearGradient(0,0,0,H);
+ gradient.addColorStop(0,"#69b8d1");
+ gradient.addColorStop(.65,"#c2e6ba");
+ gradient.addColorStop(1,"#e8dca6");
+ ctx.fillStyle=gradient;
+ ctx.fillRect(0,0,W,H);
+
+ ctx.fillStyle="#fff2a8";
+ ctx.beginPath();
+ ctx.arc(W*.78,H*.18,34,0,Math.PI*2);
+ ctx.fill();
+
+ for(let i=0;i<8;i++){
+  let x=((i*210-camera*.18)%(W+260)+W+260)%(W+260)-100;
+  let y=50+(i%3)*35;
+  ctx.fillStyle="#ffffff75";
+  ctx.beginPath();
+  ctx.arc(x,y,19,0,Math.PI*2);
+  ctx.arc(x+20,y-8,24,0,Math.PI*2);
+  ctx.arc(x+43,y,18,0,Math.PI*2);
+  ctx.fill();
+ }
+
+ ctx.fillStyle="#6a9c79";
+ for(let i=0;i<12;i++){
+  let x=((i*150-camera*.35)%(W+180)+W+180)%(W+180)-80;
+  ctx.beginPath();
+  ctx.moveTo(x,ground()-5);
+  ctx.lineTo(x+65,ground()-180-(i%3)*35);
+  ctx.lineTo(x+135,ground()-5);
+  ctx.fill();
+ }
+}
+
+function drawForest(){
+ for(let i=0;i<Math.ceil(W/70)+3;i++){
+  let x=((i*90-camera*.7)%(W+120)+W+120)%(W+120)-50;
+  let base=ground();
+  ctx.fillStyle="#704d35";
+  ctx.fillRect(x+18,base-100,15,100);
+  ctx.fillStyle="#28764d";
+  ctx.beginPath();
+  ctx.arc(x+25,base-105,43,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle="#39935c";
+  ctx.beginPath();
+  ctx.arc(x+3,base-130,27,0,Math.PI*2);
+  ctx.arc(x+47,base-133,27,0,Math.PI*2);
+  ctx.fill();
+ }
+}
+
+function drawGround(){
+ const y=ground();
+ ctx.fillStyle="#467a42";
+ ctx.fillRect(0,y,W,H-y);
+ ctx.fillStyle="#77ad56";
+ ctx.fillRect(0,y,W,12);
+ ctx.fillStyle="#9a7047";
+ ctx.fillRect(0,y+12,W,H-y-12);
+
+ for(let i=0;i<W/35+2;i++){
+  const x=((i*35-camera)%(W+35)+W+35)%(W+35)-10;
+  ctx.fillStyle=i%2?"#598f45":"#6da84e";
+  ctx.fillRect(x,y+3,13,5);
+  ctx.fillStyle="#d3b17a";
+  ctx.fillRect(x+8,y+25,3,3);
+ }
+}
+
+function drawPlatforms(){
+ for(const p of platforms){
+  let x=p.x-camera;
+  if(x<-250||x>W+100)continue;
+  ctx.fillStyle="#76513b";
+  ctx.fillRect(x,p.y,p.w,p.h);
+  ctx.fillStyle="#76b85a";
+  ctx.fillRect(x,p.y,p.w,7);
+ }
+}
+
+function drawPlayer(){
+ const x=player.x-camera,y=player.y;
+ if(player.invincible>0&&Math.floor(gameTime*14)%2===0)return;
+ ctx.save();
+ ctx.translate(x+player.w/2,y);
+ if(player.facing<0)ctx.scale(-1,1);
+ // áo choàng
+ ctx.fillStyle="#365b9a";
+ ctx.fillRect(-11,20,23,19);
+ ctx.fillStyle="#e5b37b";
+ ctx.fillRect(-9,2,19,19);
+ // tóc
+ ctx.fillStyle="#533b2d";
+ ctx.fillRect(-10,0,20,7);
+ // mắt
+ ctx.fillStyle="#26313b";
+ ctx.fillRect(3,9,3,3);
+ // áo
+ ctx.fillStyle="#d9e4e5";
+ ctx.fillRect(-9,21,18,13);
+ // chân
+ ctx.fillStyle="#483c35";
+ ctx.fillRect(-9,34,7,9);
+ ctx.fillRect(3,34,7,9);
+ // kiếm
+ ctx.fillStyle="#dcecf2";
+ ctx.fillRect(10,17,22,4);
+ ctx.fillStyle="#d4a44f";
+ ctx.fillRect(9,14,4,10);
+ if(player.attack>0){
+  ctx.strokeStyle="#fff2a0";
+  ctx.lineWidth=5;
+  ctx.beginPath();
+  ctx.arc(12,19,38,-.9,.9);
+  ctx.stroke();
+ }
+ ctx.restore();
+}
+
+function drawEnemies(){
+ for(const e of enemies){
+  if(!e.alive)continue;
+  const x=e.x-camera;
+  if(x<-60||x>W+60)continue;
+  ctx.fillStyle=e.hit>0?"#fff":"#4a9b68";
+  if(e.type==="goblin")ctx.fillStyle=e.hit>0?"#fff":"#9b7548";
+  ctx.beginPath();
+  ctx.ellipse(x+15,e.y+18,15,13,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle="#f5edc8";
+  ctx.fillRect(x+6,e.y+11,5,5);
+  ctx.fillRect(x+19,e.y+11,5,5);
+  ctx.fillStyle="#29322b";
+  ctx.fillRect(x+8,e.y+13,2,2);
+  ctx.fillRect(x+21,e.y+13,2,2);
+  ctx.fillStyle="#382c2b";
+  ctx.fillRect(x+7,e.y-7,16,4);
+  ctx.fillStyle="#df5951";
+  ctx.fillRect(x+7,e.y-7,16*Math.max(0,e.hp/e.maxHp),4);
+ }
+}
+
+function drawGems(){
+ for(const g of gems){
+  if(g.taken)continue;
+  const x=g.x-camera;
+  if(x<-20||x>W+20)continue;
+  ctx.fillStyle=g.type==="gold"?"#ffe17b":"#e96a71";
+  ctx.beginPath();
+  ctx.moveTo(x,g.y-8);
+  ctx.lineTo(x+7,g.y);
+  ctx.lineTo(x,g.y+8);
+  ctx.lineTo(x-7,g.y);
+  ctx.closePath();
+  ctx.fill();
+ }
+}
+
+function drawParticles(){
+ for(const p of particles){
+  ctx.globalAlpha=clamp(p.life/p.max,0,1);
+  ctx.fillStyle=p.color;
+  ctx.fillRect(p.x-camera,p.y,p.size,p.size);
+ }
+ ctx.globalAlpha=1;
+}
+
+function renderWorld(){
+ camera=clamp(player.x-W*.4,0,WORLD-W);
+ ctx.save();
+ if(shake>0){
+  ctx.translate(rand(-shake,shake),rand(-shake,shake));
+  shake=Math.max(0,shake-.5);
+ }
+ drawSky();
+ drawForest();
+ drawGround();
+ drawPlatforms();
+ drawGems();
+ drawEnemies();
+ drawPlayer();
+ drawParticles();
+ ctx.restore();
+}
+
+// ===== PHẦN 3: HOÀN THIỆN GAME =====
+
+function update(dt){
+ if(!running||paused)return;
+ gameTime+=dt;
+
+ updatePlayer(dt);
+ updateEnemies(dt);
+ updateGems();
+ updateParticles(dt);
+
+ if(messageTimer>0){
+  messageTimer-=dt;
+  if(messageTimer<=0)$("message").style.display="none";
+ }
+
+ if(player.hp<=0){
+  player.hp=0;
+  updateHUD();
+  return;
+ }
+
+ saveTimer+=dt;
+ if(saveTimer>=10){
+  saveTimer=0;
+  saveGame();
+ }
+}
+
+function gameLoop(timestamp){
+ const dt=Math.min((timestamp-last)/1000||0,.04);
+ last=timestamp;
+ update(dt);
+ if(running)renderWorld();
+ requestAnimationFrame(gameLoop);
+}
+
+function saveGame(){
+ try{
+  const data={
+   x:player.x,hp:player.hp,mp:player.mp,
+   level,xp,nextXP,gold,potions,inventory
+  };
+  localStorage.setItem("wonderland_save",JSON.stringify(data));
+ }catch(e){}
+}
+
+function loadGame(){
+ try{
+  const data=JSON.parse(localStorage.getItem("wonderland_save"));
+  if(!data)return false;
+  player.x=clamp(Number(data.x)||100,0,WORLD-player.w);
+  player.hp=clamp(Number(data.hp)||100,1,player.maxHp);
+  player.mp=clamp(Number(data.mp)||60,0,player.maxMp);
+  level=Math.max(1,Number(data.level)||1);
+  xp=Math.max(0,Number(data.xp)||0);
+  nextXP=Math.max(30,Number(data.nextXP)||30);
+  gold=Math.max(0,Number(data.gold)||0);
+  potions=Math.max(0,Number(data.potions)||0);
+  inventory=Array.isArray(data.inventory)?data.inventory:[];
+  player.maxHp=100+(level-1)*12;
+  player.maxMp=60+(level-1)*5;
+  updateHUD();
+  return true;
+ }catch(e){return false;}
+}
+
+function restartGame(){
+ player.x=100;
+ player.y=ground()-player.h;
+ player.vx=0;
+ player.vy=0;
+ player.hp=player.maxHp;
+ player.mp=player.maxMp;
+ player.invincible=0;
+ player.attack=0;
+ player.dash=0;
+ level=1;xp=0;nextXP=30;
+ gold=0;potions=3;inventory=[];
+ gameTime=0;saveTimer=0;
+ makeWorld();
+ updateHUD();
+ $("menu").style.display="none";
+ $("bossBox").style.display="none";
+ running=true;paused=false;
+ showMessage("Chào mừng đến Wonderland!");
+ saveGame();
+}
+
+function startGame(){
+ if(!loadGame()){
+  player.x=100;
+  player.y=ground()-player.h;
+ }
+ makeWorld();
+ player.y=ground()-player.h;
+ updateHUD();
+ $("menu").style.display="none";
+ running=true;
+ paused=false;
+ last=performance.now();
+ showMessage("Hãy bắt đầu cuộc phiêu lưu!");
+ playSound(500,.15);
+}
+
+function bindHold(id,key){
+ const el=$(id);
+ const down=e=>{
+  e.preventDefault();
+  keys[key]=true;
+  el.classList.add("active");
+ };
+ const up=e=>{
+  e.preventDefault();
+  keys[key]=false;
+  el.classList.remove("active");
+ };
+ el.addEventListener("pointerdown",down);
+ el.addEventListener("pointerup",up);
+ el.addEventListener("pointercancel",up);
+ el.addEventListener("lostpointercapture",up);
+}
+
+bindHold("left","left");
+bindHold("right","right");
+
+$("jump").addEventListener("pointerdown",e=>{
+ e.preventDefault();jump();
+});
+$("attack").addEventListener("pointerdown",e=>{
+ e.preventDefault();attack();
+});
+$("dash").addEventListener("pointerdown",e=>{
+ e.preventDefault();dash();
+});
+
+window.addEventListener("keydown",e=>{
+ if(["ArrowLeft","ArrowRight","ArrowUp"," ","a","d","w","j","k"].includes(e.key))e.preventDefault();
+ if(e.key==="ArrowLeft"||e.key==="a")keys.left=true;
+ if(e.key==="ArrowRight"||e.key==="d")keys.right=true;
+ if(e.key==="ArrowUp"||e.key==="w"||e.key===" ")jump();
+ if(e.key==="j")attack();
+ if(e.key==="k")dash();
+ if(e.key==="e")usePotion();
+});
+window.addEventListener("keyup",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")keys.left=false;
+ if(e.key==="ArrowRight"||e.key==="d")keys.right=false;
+});
+
+$("start").addEventListener("click",startGame);
+
+$("bagBtn").addEventListener("click",()=>{
+ $("inventory").style.display="block";
+ updateHUD();
+});
+$("closeInv").addEventListener("click",()=>{
+ $("inventory").style.display="none";
+});
+$("soundBtn").addEventListener("click",()=>{
+ soundOn=!soundOn;
+ $("soundBtn").textContent=soundOn?"🔊":"🔇";
+ if(soundOn)playSound(500,.1);
+});
+$("pauseBtn").addEventListener("click",()=>{
+ if(!running)return;
+ paused=!paused;
+ $("pauseBtn").textContent=paused?"▶":"Ⅱ";
+ if(paused)showMessage("Đã tạm dừng");
+ else showMessage("Tiếp tục phiêu lưu!");
+});
+
+// Chạm hai lần vào túi để dùng bình máu
+let lastBagTap=0;
+$("bagBtn").addEventListener("dblclick",usePotion);
+
+// Chặn thao tác cuộn trang khi chơi trên điện thoại
+document.addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+
+updateHUD();
+renderWorld();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
+
+
