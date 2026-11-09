@@ -4,413 +4,442 @@ HTML
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Kiếm Sĩ Lang Thang</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;user-select:none}
-html,body,#gameBox{width:100%;height:100%;overflow:hidden;background:#101725;font-family:Arial;touch-action:none}
-#gameBox{position:fixed;inset:0}
-canvas{width:100%;height:100%;display:block}
-#hud{position:absolute;top:12px;left:12px;width:min(210px,43vw);color:white;text-shadow:1px 2px 3px black;pointer-events:none}
-.name{color:#f5d18c;font-weight:bold;font-size:13px;margin-bottom:5px}
-.bar{height:11px;background:#252735;border:1px solid #aaa;border-radius:5px;overflow:hidden;margin-bottom:5px}
-.fill{height:100%;width:100%}
-#hp{background:linear-gradient(90deg,#a5162e,#ff5866)}
-#xp{width:0;background:#58c9ff}
-#stats{font-size:11px}
-#bossHud{display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(300px,55vw);color:white;text-align:center;font-size:12px;text-shadow:1px 2px 3px black}
-#bossHp{background:#ed334d}
-#controls{position:absolute;inset:0;pointer-events:none}
-.btn{position:absolute;border:1px solid #ffffff55;background:#c9e0ff20;color:white;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:bold;text-shadow:1px 2px 3px black;pointer-events:auto;touch-action:none}
-#left{width:58px;height:58px;left:4%;bottom:7%}
-#right{width:58px;height:58px;left:17%;bottom:7%}
-#jump{width:58px;height:58px;right:5%;bottom:7%}
-#attack{width:76px;height:76px;right:19%;bottom:16%;font-size:30px}
-#skill{width:53px;height:53px;right:31%;bottom:6%}
-#dash{width:50px;height:50px;right:6%;bottom:29%}
-#message{position:absolute;top:24%;left:50%;transform:translateX(-50%);color:#ffe4a1;text-shadow:2px 2px 4px black;font-size:14px;pointer-events:none;text-align:center}
-#startScreen{position:absolute;inset:0;background:linear-gradient(#101c31eF,#080d18f5);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:17px;color:white;text-align:center;z-index:5;padding:20px}
-#startScreen h1{font-size:clamp(25px,6vw,48px);color:#f3d18b;text-shadow:0 0 20px #a76b38}
-#startScreen p{font-size:13px;color:#d0d9e6}
-#start{padding:14px 40px;border:1px solid #f0c77e;border-radius:7px;background:linear-gradient(#b47a42,#633719);color:white;font-size:17px;font-weight:bold}
-@media(orientation:portrait){
- #left,#right,#jump{width:49px;height:49px}
- #attack{width:65px;height:65px;right:18%;bottom:16%}
- #skill{width:46px;height:46px}
- #dash{width:45px;height:45px}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090d16}
+body{font-family:Arial,sans-serif;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+#hud{position:fixed;top:12px;left:12px;z-index:3;color:white;width:min(230px,48vw);pointer-events:none}
+.hudname{font-size:12px;letter-spacing:2px;color:#dce9ff;margin-bottom:6px;text-shadow:0 2px 4px #000}
+.bar{height:11px;background:#171c29;border:1px solid #69758a;margin-bottom:5px;transform:skewX(-12deg);overflow:hidden}
+.fill{height:100%;width:100%;transition:width .15s}
+#hp{background:linear-gradient(90deg,#a82035,#ff6470)}
+#xp{background:linear-gradient(90deg,#2674c9,#6dd9ff)}
+#bossHud{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(310px,55vw);z-index:3;color:#fff;text-align:center;pointer-events:none}
+#bossHud .bar{height:9px}
+#bossHp{background:linear-gradient(90deg,#831a28,#ff4654)}
+#info{position:fixed;top:76px;left:12px;color:#d7e3f8;font-size:11px;text-shadow:0 2px 4px #000;z-index:3;pointer-events:none}
+#controls{position:fixed;inset:0;z-index:5;pointer-events:none}
+.pad{position:absolute;bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end}
+#movePad{left:18px}
+#actionPad{right:18px;gap:12px}
+.ctrl{pointer-events:auto;width:58px;height:58px;border-radius:50%;border:1.5px solid rgba(235,245,255,.36);background:rgba(12,20,34,.08);color:#f3f7ff;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);touch-action:none;user-select:none;box-shadow:0 2px 12px #0002}
+.ctrl:active,.ctrl.down{background:rgba(180,210,255,.16);border-color:rgba(255,255,255,.8)}
+.ctrl svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#attack{width:76px;height:76px;border-color:rgba(255,255,255,.48)}
+#attack svg{width:48px;height:48px;transform:rotate(-24deg)}
+.small{width:49px;height:49px}
+#startScreen{position:fixed;inset:0;z-index:10;background:linear-gradient(#080d18c9,#080d18ed),radial-gradient(ellipse at center,#243955,#080d18);display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:20px}
+.panel{max-width:430px;width:100%;padding:28px 22px;border:1px solid #8398b455;background:#101a2bd9;box-shadow:0 15px 60px #0009}
+.panel h1{font-size:clamp(25px,6vw,42px);letter-spacing:3px;margin:0 0 8px;color:#e8f2ff;text-shadow:0 0 22px #75aaff66}
+.panel p{font-size:13px;line-height:1.7;color:#b9c9df}
+#startBtn{margin-top:14px;padding:14px 35px;border:1px solid #a9c9f5;background:linear-gradient(135deg,#304e75,#172b49);color:white;font-weight:bold;letter-spacing:2px;font-size:14px}
+#hint{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);color:#d7e3f899;font-size:10px;z-index:2;pointer-events:none;white-space:nowrap}
+@media (orientation:landscape){
+ #hud{top:10px;left:14px}
+ .pad{bottom:14px}
+ #movePad{left:22px}
+ #actionPad{right:22px}
+ .ctrl{width:55px;height:55px}
+ #attack{width:72px;height:72px}
 }
 </style>
 </head>
 <body>
-<div id="gameBox">
 <canvas id="game"></canvas>
 
 <div id="hud">
- <div class="name">KIẾM SĨ LANG THANG</div>
+ <div class="hudname">WANDERER · KIẾM SĨ</div>
  <div class="bar"><div class="fill" id="hp"></div></div>
- <div class="bar"><div class="fill" id="xp"></div></div>
- <div id="stats">HP: 100 | Cấp 1</div>
+ <div class="bar" style="height:5px"><div class="fill" id="xp"></div></div>
+ <div style="font-size:10px;color:#dbe8fa;text-shadow:0 1px 4px #000" id="stats">HP 100 / 100</div>
 </div>
-
 <div id="bossHud">
- <div id="bossName">KẺ CANH GIỮ RỪNG</div>
+ <div style="font-size:11px;letter-spacing:3px;margin-bottom:5px">KẺ CANH GIỮ DI TÍCH</div>
  <div class="bar"><div class="fill" id="bossHp"></div></div>
 </div>
-
-<div id="message"></div>
+<div id="info">KHU RỪNG CỔ · VÙNG 01</div>
 
 <div id="controls">
- <div class="btn" id="left">◀</div>
- <div class="btn" id="right">▶</div>
- <div class="btn" id="jump">↑</div>
- <div class="btn" id="attack">⚔</div>
- <div class="btn" id="skill">✦</div>
- <div class="btn" id="dash">»</div>
+ <div class="pad" id="movePad">
+  <button class="ctrl" id="left" aria-label="Sang trái"><svg viewBox="0 0 24 24"><path d="M15 5 7 12l8 7"/></svg></button>
+  <button class="ctrl" id="right" aria-label="Sang phải"><svg viewBox="0 0 24 24"><path d="m9 5 8 7-8 7"/></svg></button>
+ </div>
+ <div class="pad" id="actionPad">
+  <button class="ctrl small" id="jump" aria-label="Nhảy"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  <button class="ctrl small" id="dash" aria-label="Lướt"><svg viewBox="0 0 24 24"><path d="m4 8 5 4-5 4M12 8l5 4-5 4"/></svg></button>
+  <button class="ctrl" id="skill" aria-label="Kỹ năng"><svg viewBox="0 0 24 24"><path d="M4 18 18 4M8 4h10v10M4 7l3-3M17 20l3-3"/></svg></button>
+  <button class="ctrl" id="attack" aria-label="Chém"><svg viewBox="0 0 64 64"><path d="M12 49 43 9l8-4-2 9-31 39z" fill="rgba(220,237,255,.18)"/><path d="M12 49 43 9l8-4-2 9-31 39z"/><path d="m8 44 12 9M5 51l8 8M17 53l-5 6"/></svg></button>
+ </div>
 </div>
+<div id="hint">◀ ▶ DI CHUYỂN · ↑ NHẢY · KIẾM TẤN CÔNG</div>
 
 <div id="startScreen">
- <h1>KIẾM SĨ LANG THANG</h1>
- <p>Một hành trình mới đang chờ đợi...</p>
- <p>Khám phá rừng sâu, gặp gỡ NPC và chiến đấu với Boss.</p>
- <button id="start">BẮT ĐẦU</button>
-</div>
+ <div class="panel">
+  <h1>KIẾM SĨ<br>LANG THANG</h1>
+  <p>Một hành trình bắt đầu giữa khu rừng cổ.<br>Khám phá, gặp gỡ nhân vật và đối đầu với kẻ canh giữ.</p>
+  <p style="color:#91a9c9">Di chuyển: ◀ ▶ &nbsp; Nhảy: ↑ &nbsp; Tấn công: Kiếm</p>
+  <button id="startBtn">BẮT ĐẦU PHIÊU LƯU</button>
+ </div>
 </div>
 
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
 let W=innerWidth,H=innerHeight,D=1;
 function resize(){
- W=innerWidth;H=innerHeight;
+ W=visualViewport?.width||innerWidth;
+ H=visualViewport?.height||innerHeight;
  D=Math.min(devicePixelRatio||1,2);
- canvas.width=W*D;canvas.height=H*D;
+ canvas.width=Math.round(W*D);canvas.height=Math.round(H*D);
+ canvas.style.width=W+"px";canvas.style.height=H+"px";
  ctx.setTransform(D,0,0,D,0,0);
 }
-addEventListener("resize",resize);resize();
+addEventListener("resize",resize);
+addEventListener("orientationchange",()=>setTimeout(resize,120));
+visualViewport?.addEventListener("resize",resize);
+resize();
 
-const ground=()=>H*.79;
-const world=6500;
-let camera=0,running=false,last=0,clock=0,shake=0,msgTime=0;
-const hero={x:150,y:0,w:32,h:54,vx:0,vy:0,speed:220,hp:100,maxHp:100,xp:0,level:1,face:1,onGround:false,attack:0,attackCD:0,skillCD:0,dashCD:0,dashTime:0,inv:0};
-hero.y=ground()-hero.h;
-
+const world={width:3400,ground:0};
+let camera=0,playing=false,last=0,time=0,shake=0;
 const keys={left:false,right:false};
-let particles=[],texts=[];
-const npcs=[
- {x:650,name:"Lữ khách",color:"#b58a62",talk:"Con đường phía trước đầy quái vật. Hãy cẩn thận!"},
- {x:1900,name:"Thợ săn",color:"#789c8c",talk:"Thanh kiếm của cậu có thể mạnh hơn nếu luyện tập."},
- {x:3700,name:"Nhà thám hiểm",color:"#bd8d59",talk:"Lãnh địa phía trước là nơi Boss trú ngụ."}
-];
+const hero={x:150,y:0,vx:0,vy:0,w:34,h:62,face:1,hp:100,max:100,
+ onGround:false,attack:0,attackCd:0,inv:0,dash:0,dashCd:0,
+ skill:0,skillCd:0,anim:0,xp:0};
+let enemies=[],particles=[],floating=[],npc={x:600,y:0},boss={
+ x:2650,y:0,hp:200,max:200,active:false,rage:0,dead:false,attack:0
+};
+const floor=()=>H*.78;
+function reset(){
+ hero.x=150;hero.y=floor()-hero.h;hero.vx=0;hero.vy=0;hero.hp=100;
+ hero.attack=0;hero.attackCd=0;hero.inv=0;hero.dash=0;hero.dashCd=0;
+ hero.skill=0;hero.skillCd=0;hero.xp=0;
+ enemies=[
+  makeEnemy(900),makeEnemy(1250),makeEnemy(1700),makeEnemy(2100)
+ ];
+ particles=[];floating=[];boss.hp=200;boss.dead=false;boss.active=false;boss.rage=0;
+}
+function makeEnemy(x){return{x,y:0,hp:55,max:55,dir:-1,attack:0,hit:0,anim:0}}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+function line(x1,y1,x2,y2,c,w=1){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function circle(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function text(t,x,y,size,color){ctx.font=`${size}px Arial`;ctx.fillStyle=color;ctx.fillText(t,x,y)}
+function particle(x,y,color,n=8,power=3){
+ for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=Math.random()*power+1;
+ particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:25+Math.random()*20,max:45,color,size:2+Math.random()*3})}
+}
+function floatText(t,x,y,color="#fff"){floating.push({t,x,y,life:48,color})}
 
-let enemies=[];
-function spawnEnemies(){
- enemies=[];
- for(let i=0;i<15;i++){
-  enemies.push({x:430+i*340,w:34,h:40,hp:45,max:45,speed:45+i%3*8,damage:8,alive:true,cd:0,face:1,type:i%3});
+function drawBackground(){
+ let g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#111d32");g.addColorStop(.58,"#30465a");g.addColorStop(1,"#182331");
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // moon
+ circle(W*.78,H*.19,35,"#d4dfdf22");circle(W*.78,H*.19,25,"#d4dfdf18");
+ // distant mountains
+ for(let i=0;i<8;i++){
+  let x=((i*330-camera*.18)%(W+400)+W+400)%(W+400)-150;
+  ctx.fillStyle=i%2?"#1c2d40":"#24384b";
+  ctx.beginPath();ctx.moveTo(x,floor()-45);ctx.lineTo(x+145,floor()-220-(i%3)*28);ctx.lineTo(x+310,floor()-45);ctx.fill();
  }
- enemies.push({x:5200,w:42,h:48,hp:90,max:90,speed:65,damage:12,alive:true,cd:0,face:1,type:3});
+ // distant trees
+ for(let i=0;i<20;i++){
+  let x=((i*190-camera*.36)%(W+220)+W+220)%(W+220)-100;
+  let y=floor()-20;
+  rect(x+22,y-125,13,125,"#182c2b");
+  for(let j=0;j<4;j++){
+   ctx.fillStyle=["#1b3934","#23483b","#1a332f"][j%3];
+   ctx.beginPath();ctx.moveTo(x-12+j*8,y-90-j*22);ctx.lineTo(x+29,y-160-j*20);ctx.lineTo(x+72-j*8,y-90-j*22);ctx.fill();
+  }
+ }
+ // ground
+ let gr=ctx.createLinearGradient(0,floor(),0,H);
+ gr.addColorStop(0,"#34483d");gr.addColorStop(.12,"#202f2d");gr.addColorStop(1,"#111b22");
+ ctx.fillStyle=gr;ctx.fillRect(0,floor(),W,H-floor());
+ rect(0,floor(),W,5,"#71836b");
+ for(let i=0;i<50;i++){
+  let x=((i*83-camera)%(W+100)+W+100)%(W+100)-40;
+  rect(x,floor()+14+(i%5)*9,18+(i%4)*7,2,"#425148");
+  rect(x+12,floor()+35+(i%4)*13,3,2,"#68715b");
+ }
+ // foreground broken pillars
+ for(let i=0;i<6;i++){
+  let x=((i*710-camera*.8)%(W+250)+W+250)%(W+250)-100;
+  if(i%2===0){
+   rect(x,floor()-72,24,72,"#35464a");rect(x-4,floor()-77,32,8,"#68746d");
+   rect(x+5,floor()-62,4,50,"#52615c");
+  }
+ }
 }
-spawnEnemies();
 
-let boss={x:5900,w:90,h:112,hp:200,max:200,speed:55,damage:16,alive:true,cd:1,rage:0,rageUsed:false,face:-1};
+function drawHero(){
+ let x=hero.x-camera,y=hero.y;
+ ctx.save();
+ if(hero.face<0){ctx.translate(x+hero.w,y);ctx.scale(-1,1);x=0;y=0}else{ctx.translate(x,y);x=0;y=0}
+ let run=Math.abs(hero.vx)>20&&hero.onGround;
+ let step=run?Math.sin(hero.anim*0.22)*5:0;
+ // shadow
+ ctx.globalAlpha=.28;ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(17,hero.h+2,22,5,0,0,7);ctx.fill();ctx.globalAlpha=1;
+ // legs + boots
+ rect(8,43,9,14,"#202c3c");rect(19,43,9,14,"#202c3c");
+ rect(6+step,54,13,7,"#111a27");rect(19-step,54,14,7,"#111a27");
+ rect(7+step,54,10,2,"#8d9ba7");rect(20-step,54,10,2,"#8d9ba7");
+ // back cloak
+ ctx.fillStyle="#7a2634";ctx.beginPath();ctx.moveTo(9,14);ctx.lineTo(1,27);ctx.lineTo(4-step,49);ctx.lineTo(17,43);ctx.lineTo(22,19);ctx.fill();
+ rect(5,23,7,18,"#a13d48");rect(5,41,9,3,"#532632");
+ // torso armor
+ rect(8,16,20,27,"#26394d");rect(10,17,16,22,"#536b7d");
+ rect(10,20,5,16,"#a5b4bc");rect(17,20,7,15,"#718b9b");
+ rect(13,18,7,5,"#d4dce0");rect(14,25,5,3,"#263a50");
+ // belt
+ rect(8,38,20,5,"#4b3028");rect(16,38,5,5,"#d1ad65");
+ // shoulder armor
+ rect(5,16,9,8,"#7c8e9a");rect(5,16,9,3,"#c1cbd0");
+ rect(23,17,9,8,"#7c8e9a");rect(23,17,9,3,"#c1cbd0");
+ // arm
+ rect(25,24,7,14,"#bd9a83");rect(25,26,8,8,"#354d63");
+ // neck + head
+ rect(14,10,9,8,"#b98772");
+ rect(10,0,19,15,"#c99b80");
+ rect(9,2,20,6,"#26313e");
+ rect(8,0,21,5,"#293b50");
+ rect(9,-2,16,5,"#3f566b");
+ rect(12,7,3,2,"#222b38");rect(23,7,3,2,"#222b38");
+ rect(20,11,6,2,"#8c5c51");
+ // hair locks
+ rect(8,2,5,9,"#202b39");rect(12,0,5,4,"#35495c");
+ rect(24,1,6,8,"#202b39");
+ // scarf
+ rect(9,14,17,4,"#a53e4a");rect(22,14,8,3,"#d35b5b");
+ // sword in idle / slash
+ ctx.save();
+ if(hero.attack>0){
+  let p=1-hero.attack/16;
+  ctx.translate(24,31);ctx.rotate(-1.55+p*1.65);
+  drawSword(0,0);
+  ctx.restore();
+  ctx.save();ctx.globalAlpha=Math.min(1,hero.attack/5)*.65;
+  ctx.strokeStyle="#e6f5ff";ctx.lineWidth=4;ctx.beginPath();
+  ctx.arc(23,29,47,-1.7,-.1);ctx.stroke();
+  ctx.strokeStyle="#86c9ff";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(23,29,51,-1.7,-.1);ctx.stroke();
+  ctx.restore();
+ }else{
+  ctx.translate(27,32);ctx.rotate(.45);drawSword(0,0);ctx.restore();
+ }
+ ctx.restore();
+}
+function drawSword(x,y){
+ // sword handle, guard, blade
+ rect(x-2,y+2,6,15,"#49372e");
+ rect(x-3,y+3,8,3,"#c39a63");
+ rect(x-5,y+15,12,4,"#c3a06a");
+ rect(x-2,y+18,6,4,"#e0c18a");
+ // blade silhouette
+ ctx.fillStyle="#667e91";ctx.beginPath();
+ ctx.moveTo(x-2,y+15);ctx.lineTo(x+2,y-35);ctx.lineTo(x+7,y-44);ctx.lineTo(x+7,y-32);ctx.lineTo(x+4,y+15);ctx.closePath();ctx.fill();
+ ctx.fillStyle="#e5f3fa";ctx.beginPath();
+ ctx.moveTo(x+1,y+13);ctx.lineTo(x+4,y-34);ctx.lineTo(x+7,y-44);ctx.lineTo(x+5,y+13);ctx.closePath();ctx.fill();
+ line(x+2,y+8,x+5,y-32,"#fff",1);
+}
 
-function say(t,d=2.2){
- document.getElementById("message").textContent=t;
- msgTime=d;
+function drawEnemy(e){
+ let x=e.x-camera,y=floor()-42;
+ ctx.save();if(e.dir>0){ctx.translate(x+28,0);ctx.scale(-1,1);x=0}else{x-=0}
+ if(e.hit>0)ctx.globalAlpha=.6;
+ // creature shadow
+ ctx.globalAlpha*=.3;ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(x+15,floor()+2,20,5,0,0,7);ctx.fill();ctx.globalAlpha=e.hit>0?.6:1;
+ // body
+ rect(x+5,y+15,20,24,"#3d5148");rect(x+8,y+10,16,16,"#63725a");
+ rect(x+6,y+36,8,7,"#26372f");rect(x+19,y+36,8,7,"#26372f");
+ rect(x+8,y+5,5,9,"#63725a");rect(x+20,y+5,5,9,"#63725a");
+ rect(x+9,y+16,4,3,"#ffb45e");rect(x+19,y+16,4,3,"#ffb45e");
+ rect(x+12,y+25,9,3,"#202c27");
+ if(e.hp<e.max){rect(x+2,y-7,30,4,"#17202a");rect(x+2,y-7,30*e.hp/e.max,4,"#d65a54")}
+ ctx.restore();
 }
-function particle(x,y,color,size=5,life=.5,vx=0,vy=0){
- particles.push({x,y,color,size,life,max:life,vx,vy});
+function drawBoss(){
+ if(boss.dead)return;
+ let x=boss.x-camera,y=floor()-104;
+ if(x<-150||x>W+150)return;
+ ctx.save();
+ ctx.globalAlpha=.3;ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(x+42,floor()+3,53,10,0,0,7);ctx.fill();ctx.globalAlpha=1;
+ let rage=boss.rage>0;
+ rect(x+13,y+27,58,66,rage?"#692b36":"#34404c");
+ rect(x+20,y+12,45,35,rage?"#a4444b":"#71808a");
+ rect(x+13,y+28,15,21,"#4b5962");rect(x+56,y+28,18,22,"#4b5962");
+ rect(x+19,y+89,17,14,"#202a32");rect(x+49,y+89,17,14,"#202a32");
+ rect(x+23,y+18,8,5,"#ffcf85");rect(x+51,y+18,8,5,"#ffcf85");
+ rect(x+28,y+35,29,6,"#1c2630");
+ // horns
+ rect(x+15,y+4,8,16,"#aeb9b7");rect(x+58,y+4,8,16,"#aeb9b7");
+ rect(x+8,y+44,12,9,"#85939a");rect(x+65,y+44,12,9,"#85939a");
+ // rune glow
+ ctx.globalAlpha=.7;circle(x+42,y+63,7,rage?"#ff5964":"#72c5d8");ctx.globalAlpha=1;
+ if(rage){ctx.strokeStyle="#ff5964";ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+42,y+51,54,0,Math.PI*2);ctx.stroke()}
+ ctx.restore();
 }
-function floatText(x,y,t,color="#ffe5a0"){
- texts.push({x,y,t,color,life:.8});
-}
-function gainXP(n){
- hero.xp+=n;
- if(hero.xp>=100){
-  hero.xp-=100;hero.level++;
-  hero.maxHp+=10;hero.hp=hero.maxHp;
-  say("LÊN CẤP "+hero.level+"!");
- }
-}
-function hurtEnemy(e,n){
- if(!e.alive)return;
- e.hp-=n;
- floatText(e.x,e.y-20,"-"+n);
- for(let i=0;i<7;i++)particle(e.x,e.y,"#e8c48c",4,.4,(Math.random()-.5)*100,(Math.random()-.5)*100);
- if(e.hp<=0){
-  e.alive=false;gainXP(25);say("Đã đánh bại quái vật!");
- }
-}
-function hitBoss(n){
- if(!boss.alive)return;
- boss.hp=Math.max(0,boss.hp-n);
- floatText(boss.x,boss.y-25,"-"+n,"#ffd27c");
- shake=5;
- if(boss.hp<=0){
-  boss.alive=false;gainXP(100);say("BẠN ĐÃ ĐÁNH BẠI BOSS!");
- }
-}
-function attack(){
- if(hero.attackCD>0)return;
- hero.attack=.25;hero.attackCD=.36;
- for(const e of enemies){
-  if(e.alive&&Math.abs(e.x-hero.x)<95&&(e.x-hero.x)*hero.face>-20)hurtEnemy(e,20);
- }
- if(boss.alive&&Math.abs(boss.x-hero.x)<125&&(boss.x-hero.x)*hero.face>-25)hitBoss(20);
-}
-function skill(){
- if(hero.skillCD>0)return;
- hero.skillCD=4;hero.attack=.4;
- for(let i=0;i<25;i++)particle(hero.x+hero.face*35,hero.y+25,"#9deaff",5,.6,hero.face*(40+Math.random()*160),(Math.random()-.5)*140);
- for(const e of enemies)if(e.alive&&Math.abs(e.x-hero.x)<170)hurtEnemy(e,35);
- if(boss.alive&&Math.abs(boss.x-hero.x)<190)hitBoss(35);
- say("KIẾM PHONG!");
-}
-function dash(){
- if(hero.dashCD>0)return;
- hero.dashCD=2;hero.dashTime=.22;hero.inv=.35;hero.vx=hero.face*650;
- for(let i=0;i<10;i++)particle(hero.x,hero.y+30,"#a7dcff",5,.3,-hero.face*Math.random()*120,(Math.random()-.5)*70);
-}
-function jump(){
- if(hero.onGround){hero.vy=-430;hero.onGround=false;}
-}
-function interact(){
- let n=npcs.find(a=>Math.abs(a.x-hero.x)<100);
- if(n)say(n.talk,3);
- else say("Không có ai ở gần đây.",1.5);
+function drawNPC(){
+ let x=npc.x-camera,y=floor()-48;
+ if(x<-80||x>W+80)return;
+ rect(x+8,y+16,18,25,"#315c6b");rect(x+10,y+2,15,15,"#d3ad8b");
+ rect(x+8,y,18,7,"#b9c9c5");rect(x+7,y+2,4,10,"#526a75");
+ rect(x+9,y+41,7,7,"#222b35");rect(x+20,y+41,7,7,"#222b35");
+ rect(x+12,y+8,2,2,"#27313a");rect(x+21,y+8,2,2,"#27313a");
+ text("!",x+13,y-10,17,"#f4d68a");
 }
 
 function update(dt){
- clock+=dt;
- hero.attackCD=Math.max(0,hero.attackCD-dt);
- hero.skillCD=Math.max(0,hero.skillCD-dt);
- hero.dashCD=Math.max(0,hero.dashCD-dt);
- hero.dashTime=Math.max(0,hero.dashTime-dt);
- hero.attack=Math.max(0,hero.attack-dt);
- hero.inv=Math.max(0,hero.inv-dt);
-
- if(msgTime>0){msgTime-=dt;if(msgTime<=0)document.getElementById("message").textContent="";}
-
- if(keys.left){hero.face=-1;if(hero.dashTime<=0)hero.vx=-hero.speed;}
- else if(keys.right){hero.face=1;if(hero.dashTime<=0)hero.vx=hero.speed;}
- else if(hero.dashTime<=0){hero.vx*=.78;if(Math.abs(hero.vx)<5)hero.vx=0;}
-
- hero.x=Math.max(20,Math.min(world-30,hero.x+hero.vx*dt));
- hero.vy+=1100*dt;hero.y+=hero.vy*dt;
- if(hero.y+hero.h>=ground()){hero.y=ground()-hero.h;hero.vy=0;hero.onGround=true;}
- else hero.onGround=false;
-
- camera=Math.max(0,Math.min(world-W,hero.x-W*.43));
-
- for(const e of enemies){
-  if(!e.alive)continue;
-  e.cd=Math.max(0,e.cd-dt);
-  let dx=hero.x-e.x,dist=Math.abs(dx);
-  if(dist<350){
-   e.face=dx>=0?1:-1;
-   if(dist>48)e.x+=e.face*e.speed*dt;
-   else if(e.cd<=0){
-    e.cd=1.3;
-    if(hero.inv<=0){hero.hp-=e.damage;hero.inv=.5;shake=4;floatText(hero.x,hero.y-10,"-"+e.damage,"#ff6969");}
-   }
-  }
- }
- if(boss.alive){
-  boss.cd=Math.max(0,boss.cd-dt);
-  if(boss.hp<=boss.max*.3&&!boss.rageUsed){
-   boss.rageUsed=true;boss.rage=60;boss.speed=hero.speed;boss.damage=20;
-   say("BOSS CUỒNG NỘ!");
-   shake=10;
-  }
-  if(boss.rage>0){
-   boss.rage=Math.max(0,boss.rage-dt);
-   if(boss.rage===0){boss.speed=55;boss.damage=16;say("Boss đã hết cuồng nộ!");}
-  }
-  let dx=hero.x-boss.x,dist=Math.abs(dx);
-  if(dist<500){
-   boss.face=dx>=0?1:-1;
-   if(dist>85)boss.x+=boss.face*boss.speed*dt;
-   else if(boss.cd<=0){
-    boss.cd=boss.rage>0?1:1.6;
-    if(hero.inv<=0){hero.hp-=boss.damage;hero.inv=.65;shake=8;floatText(hero.x,hero.y-10,"-"+boss.damage,"#ff4545");}
-   }
-  }
- }
-
- for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=100*dt;p.life-=dt;}
- particles=particles.filter(p=>p.life>0);
- for(const t of texts){t.y-=35*dt;t.life-=dt;}
- texts=texts.filter(t=>t.life>0);
- shake=Math.max(0,shake-25*dt);
- hero.hp=Math.max(0,Math.min(hero.maxHp,hero.hp));
-
- document.getElementById("hp").style.width=hero.hp/hero.maxHp*100+"%";
- document.getElementById("xp").style.width=hero.xp+"%";
- document.getElementById("stats").textContent="HP: "+Math.ceil(hero.hp)+" | Cấp "+hero.level;
- document.getElementById("bossHud").style.display=boss.alive&&hero.x>4700?"block":"none";
- document.getElementById("bossHp").style.width=boss.hp/boss.max*100+"%";
-
- if(hero.hp<=0){running=false;document.getElementById("startScreen").style.display="flex";document.querySelector("#startScreen h1").textContent="BẠN ĐÃ THẤT BẠI";document.querySelector("#start").textContent="CHƠI LẠI";}
-}
-
-function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
-function sky(){
- let g=ctx.createLinearGradient(0,0,0,H);
- g.addColorStop(0,"#111e39");g.addColorStop(.6,"#536477");g.addColorStop(1,"#d18d69");
- ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- ctx.fillStyle="#fff0c8";ctx.beginPath();ctx.arc(W*.78,H*.17,Math.min(W,H)*.055,0,Math.PI*2);ctx.fill();
- for(let i=0;i<12;i++){
-  let x=i*230-camera*.18,y=H*.59+(i%3)*12;
-  ctx.fillStyle="#29394a";ctx.beginPath();ctx.moveTo(x-90,H);ctx.lineTo(x+40,y-145);ctx.lineTo(x+170,H);ctx.fill();
- }
-}
-function forest(){
- let g=ground();
- for(let i=-2;i<35;i++){
-  let x=i*185-camera*.45%185,h=100+(i*37%65);
-  rect(x+35,g-h,16,h,"#263a32");
-  rect(x,g-h+10,85,55,"#1a3c31");
-  rect(x+12,g-h-20,62,48,"#28513b");
- }
- rect(0,g,W,H-g,"#39302b");
- rect(0,g,W,9,"#557344");
- rect(0,g+9,W,5,"#344a32");
- for(let i=0;i<80;i++){
-  let x=(i*137-camera*.9)%(W+40),y=g+15+(i*23%Math.max(25,H-g-20));
-  if(i%3===0)rect(x,y,8,5,"#776653");
-  else rect(x,y,3,7,"#819b53");
- }
- for(let i=-2;i<20;i++){
-  let x=i*300-camera%300;
-  rect(x+35,g-90,18,90,"#493129");
-  rect(x,g-140,90,65,"#193a2d");
-  rect(x+13,g-175,65,55,"#24523a");
-  rect(x+25,g-195,42,35,"#386746");
- }
-}
-function drawHero(){
- let x=hero.x-camera,y=hero.y;
- let step=Math.abs(hero.vx)>15?Math.sin(clock*13)*4:0;
- ctx.save();ctx.translate(x+hero.w/2,y);if(hero.face<0)ctx.scale(-1,1);
- if(hero.inv>0&&Math.floor(clock*18)%2===0)ctx.globalAlpha=.4;
- ctx.fillStyle="#222";ctx.beginPath();ctx.ellipse(0,hero.h+2,21,5,0,0,Math.PI*2);ctx.fill();
- rect(-12,38+step,9,15,"#28303b");rect(3,38-step,9,15,"#28303b");
- rect(-13,49+step,12,6,"#171d27");rect(2,49-step,13,6,"#171d27");
- rect(-13,18,27,23,"#344b61");rect(-10,20,20,19,"#52677a");
- rect(-13,37,27,4,"#b28a50");
- rect(-5,12,11,9,"#dca47b");rect(-11,0,23,17,"#e1b28a");
- rect(-12,-3,25,9,"#282b37");rect(-10,-7,20,8,"#3e4655");
- rect(-8,5,4,3,"#25222a");rect(4,5,4,3,"#25222a");
- rect(-15,18,8,23,"#8c2936");rect(-20,34,8,15,"#9e3540");
- rect(10,22,8,13,"#dca47b");
+ if(!playing)return;
+ time+=dt;
+ hero.anim+=dt*60;
+ let speed=210;
+ if(keys.left){hero.vx=-speed;hero.face=-1}
+ else if(keys.right){hero.vx=speed;hero.face=1}
+ else hero.vx*=Math.pow(.001,dt);
+ if(hero.dash>0){hero.vx=hero.face*520;hero.dash-=dt*60}
+ hero.x+=hero.vx*dt;
+ hero.x=Math.max(20,Math.min(world.width-50,hero.x));
+ hero.vy+=1250*dt;hero.y+=hero.vy*dt;
+ if(hero.y+hero.h>=floor()){hero.y=floor()-hero.h;hero.vy=0;hero.onGround=true}else hero.onGround=false;
+ hero.attack=Math.max(0,hero.attack-dt*60);
+ hero.attackCd=Math.max(0,hero.attackCd-dt*60);
+ hero.inv=Math.max(0,hero.inv-dt*60);
+ hero.dashCd=Math.max(0,hero.dashCd-dt*60);
+ hero.skillCd=Math.max(0,hero.skillCd-dt*60);
  if(hero.attack>0){
-  ctx.save();ctx.translate(12,27);ctx.rotate(-.9);rect(0,-3,52,5,"#d9e6e9");rect(-8,-3,12,5,"#a87b4a");ctx.restore();
- }else{
-  rect(14,24,6,35,"#d9e6e9");rect(11,32,12,4,"#a87b4a");rect(15,59,4,10,"#a87b4a");
+  for(let e of enemies){
+   if(e.hp<=0)continue;
+   if(Math.abs(e.x-hero.x)<75&&Math.abs((e.x-hero.x)*hero.face)<95&&e.hit<=0){
+    e.hp-=20;e.hit=22;particle(e.x-camera+15,floor()-25,"#e4f4ff",10,4);
+    floatText("-20",e.x-camera,floor()-55,"#fff0c4");
+    if(e.hp<=0){hero.xp+=20;particle(e.x-camera,floor()-30,"#9de7c1",18,5)}
+   }
+  }
+  if(!boss.dead&&Math.abs(boss.x-hero.x)<105&&Math.abs((boss.x-hero.x)*hero.face)<125&&boss.hit!==true){
+   boss.hp-=20;boss.hit=true;setTimeout(()=>boss.hit=false,250);
+   particle(boss.x-camera+40,floor()-60,"#a8dfff",15,5);
+   floatText("-20",boss.x-camera,floor()-130,"#ffe5a4");
+   if(boss.hp<=0){boss.hp=0;boss.dead=true;hero.xp+=100;particle(boss.x-camera+40,floor()-60,"#ffcf78",50,7)}
+  }
  }
- ctx.restore();
+ for(let e of enemies){
+  if(e.hp<=0)continue;
+  e.hit=Math.max(0,e.hit-dt*60);e.anim+=dt*60;
+  let dx=hero.x-e.x;
+  if(Math.abs(dx)<270){e.dir=dx>0?1:-1;e.x+=e.dir*65*dt}
+  if(Math.abs(dx)<42&&hero.inv<=0){
+   hero.hp-=12*dt;hero.inv=12;hero.vx=hero.x<e.x?-130:130;
+   floatText("!",hero.x-camera,floor()-80,"#ff9a9a");
+  }
+ }
+ let dist=Math.abs(hero.x-boss.x);
+ if(dist<480&&!boss.dead)boss.active=true;
+ if(boss.active&&!boss.dead){
+  if(boss.hp<=boss.max*.3&&boss.rage<=0)boss.rage=60;
+  if(boss.rage>0)boss.rage=Math.max(0,boss.rage-dt);
+  let dx=hero.x-boss.x;
+  if(Math.abs(dx)>60)boss.x+=Math.sign(dx)*(boss.rage>0?210:105)*dt;
+  if(Math.abs(dx)<76&&hero.inv<=0){
+   hero.hp-= (boss.rage>0?20:16)*dt;
+   if(Math.random()<.08){hero.inv=10;hero.vx=hero.x<boss.x?-180:180}
+  }
+ }
+ for(let p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life--}
+ particles=particles.filter(p=>p.life>0);
+ for(let f of floating){f.y-=.7;f.life--}
+ floating=floating.filter(f=>f.life>0);
+ camera=Math.max(0,Math.min(world.width-W,hero.x-W*.42));
+ document.getElementById("hp").style.width=Math.max(0,hero.hp/hero.max*100)+"%";
+ document.getElementById("xp").style.width=(hero.xp%100)+"%";
+ document.getElementById("stats").textContent=`HP ${Math.max(0,Math.ceil(hero.hp))} / 100     EXP ${hero.xp}`;
+ document.getElementById("bossHud").style.display=boss.active&&!boss.dead?"block":"none";
+ document.getElementById("bossHp").style.width=(boss.hp/boss.max*100)+"%";
+ if(hero.hp<=0){hero.hp=0;gameOver()}
 }
-function drawEnemy(e){
- let x=e.x-camera,y=ground()-e.h;
- let c=["#a64d43","#596c4b","#65517f","#5b3734"][e.type];
- rect(x+7,y+10,23,25,c);rect(x+5,y+3,26,17,c);
- rect(x+8,y,7,8,"#d6b29b");rect(x+23,y,7,8,"#d6b29b");
- rect(x+10,y+11,4,4,"#ffdf7d");rect(x+23,y+11,4,4,"#ffdf7d");
- rect(x+8,y+34,7,9,"#29272d");rect(x+23,y+34,7,9,"#29272d");
- if(e.hp<e.max){rect(x,y-9,38,4,"#29252a");rect(x,y-9,38*e.hp/e.max,4,"#ed5454");}
-}
-function drawNPC(n){
- let x=n.x-camera,y=ground()-49;
- rect(x+8,y+16,20,26,n.color);rect(x+8,y,20,19,"#e2b58d");
- rect(x+6,y-3,23,8,"#473a34");rect(x+12,y+42,6,8,"#252a35");rect(x+22,y+42,6,8,"#252a35");
- ctx.fillStyle="#fff0bb";ctx.font="11px Arial";ctx.textAlign="center";ctx.fillText(n.name,x+18,y-12);
- if(Math.abs(hero.x-n.x)<100)ctx.fillText("GẶP GỠ",x+18,y-25);
-}
-function drawBoss(){
- if(!boss.alive)return;
- let x=boss.x-camera,y=ground()-boss.h,r=boss.rage>0;
- rect(x+13,y+35,65,65,r?"#852b35":"#343c4a");
- rect(x+20,y+39,50,50,r?"#bd3b3d":"#536171");
- rect(x+7,y+45,18,34,"#252b38");rect(x+67,y+45,18,34,"#252b38");
- rect(x+21,y+8,49,39,"#60443c");
- rect(x+13,y+13,15,21,"#3d3235");rect(x+65,y+13,15,21,"#3d3235");
- rect(x+31,y+22,9,7,r?"#ff3939":"#f6c45b");rect(x+53,y+22,9,7,r?"#ff3939":"#f6c45b");
- rect(x+22,y,8,16,"#c0c0b3");rect(x+62,y,8,16,"#c0c0b3");
- rect(x+22,y+94,17,21,"#282b34");rect(x+55,y+94,17,21,"#282b34");
- rect(x+80,y+53,9,50,"#a7b5c4");rect(x+75,y+48,18,8,"#d0a05c");
- if(r){ctx.strokeStyle="#ff4949";ctx.lineWidth=4;ctx.beginPath();ctx.arc(x+45,y+55,75+Math.sin(clock*10)*5,0,Math.PI*2);ctx.stroke();}
-}
-function render(){
- ctx.save();
- if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
- sky();forest();
- for(const n of npcs)drawNPC(n);
- for(const e of enemies)if(e.alive&&e.x>camera-80&&e.x<camera+W+80)drawEnemy(e);
+
+function draw(){
+ ctx.clearRect(0,0,W,H);drawBackground();
+ // little scenery flowers
+ for(let i=0;i<14;i++){
+  let x=((i*275-camera)%(W+100)+W+100)%(W+100)-30;
+  rect(x,floor()-7,2,7,"#82916c");circle(x+2,floor()-8,3,"#c7b88a");
+ }
+ drawNPC();
+ enemies.forEach(e=>{if(e.hp>0)drawEnemy(e)});
  drawBoss();drawHero();
- for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);rect(p.x-camera,p.y,p.size,p.size,p.color);}
+ for(let p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);rect(p.x,p.y,p.size,p.size,p.color)}
  ctx.globalAlpha=1;
- for(const t of texts){ctx.globalAlpha=Math.max(0,t.life);ctx.fillStyle=t.color;ctx.font="bold 16px Arial";ctx.textAlign="center";ctx.fillText(t.t,t.x-camera,t.y);}
+ for(let f of floating){ctx.globalAlpha=f.life/48;text(f.t,f.x,f.y,15,f.color)}
  ctx.globalAlpha=1;
- ctx.fillStyle="#ffffff80";ctx.font="13px Arial";ctx.textAlign="center";
- ctx.fillText(hero.x<1500?"RỪNG SƯƠNG MÙ":hero.x<3200?"THUNG LŨNG CỔ":hero.x<4800?"RỪNG BỊ LÃNG QUÊN":"LÃNH ĐỊA BOSS",W/2,H*.25);
- ctx.restore();
-}
-function loop(t){
- if(!running)return;
- let dt=Math.min((t-last)/1000,.033);last=t;
- update(dt);render();requestAnimationFrame(loop);
-}
-function startGame(){
- document.getElementById("startScreen").style.display="none";
- running=true;last=performance.now();requestAnimationFrame(loop);
- say("Hành trình bắt đầu!",2);
-}
-document.getElementById("start").addEventListener("click",()=>{
- if(hero.hp<=0){
-  hero.x=150;hero.hp=hero.maxHp;hero.xp=0;hero.level=1;
-  boss={x:5900,w:90,h:112,hp:200,max:200,speed:55,damage:16,alive:true,cd:1,rage:0,rageUsed:false,face:-1};
-  spawnEnemies();particles=[];texts=[];
+ if(boss.rage>0&&!boss.dead)text("CUỒNG NỘ: "+Math.ceil(boss.rage)+"s",W/2-48,95,12,"#ff9b9b");
+ if(hero.x>npc.x-55&&hero.x<npc.x+65){
+  text("NHÂN VẬT: Chào kiếm sĩ!",W/2-75,H*.25,13,"#fff1c7");
  }
- startGame();
-});
-
-function bind(id,down,up){
- let el=document.getElementById(id);
- el.addEventListener("pointerdown",e=>{e.preventDefault();el.setPointerCapture(e.pointerId);down();});
- el.addEventListener("pointerup",e=>{e.preventDefault();up();});
- el.addEventListener("pointercancel",up);
- el.addEventListener("lostpointercapture",up);
+ if(boss.dead){
+  text("KẺ CANH GIỮ ĐÃ BỊ ĐÁNH BẠI",W/2-115,H*.25,16,"#ffe1a0");
+ }
 }
-bind("left",()=>keys.left=true,()=>keys.left=false);
-bind("right",()=>keys.right=true,()=>keys.right=false);
-bind("jump",jump,()=>{});
-bind("attack",attack,()=>{});
-bind("skill",skill,()=>{});
-bind("dash",dash,()=>{});
+function loop(ts){
+ let dt=Math.min((ts-last)/1000||0,.035);last=ts;
+ update(dt);draw();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
 
+function attack(){
+ if(!playing||hero.attackCd>0)return;
+ hero.attack=16;hero.attackCd=23;
+}
+function jump(){if(playing&&hero.onGround){hero.vy=-510;hero.onGround=false;particle(hero.x-camera+16,floor()-3,"#b9c8d0",5,2)}}
+function dash(){
+ if(!playing||hero.dashCd>0)return;
+ hero.dash=9;hero.dashCd=70;hero.inv=12;
+ particle(hero.x-camera+16,hero.y+35,"#9cc9e8",10,3);
+}
+function skill(){
+ if(!playing||hero.skillCd>0)return;
+ hero.skillCd=150;hero.attack=20;hero.attackCd=25;
+ particle(hero.x-camera+17,hero.y+25,"#a8dcff",24,6);
+ // kỹ năng chém mạnh: tác động lên mục tiêu phía trước
+ for(let e of enemies)if(e.hp>0&&Math.abs(e.x-hero.x)<145&&Math.sign(e.x-hero.x)===hero.face){e.hp-=25;particle(e.x-camera,floor()-25,"#d7f2ff",12,5)}
+ if(!boss.dead&&Math.abs(boss.x-hero.x)<160&&Math.sign(boss.x-hero.x)===hero.face){boss.hp=Math.max(0,boss.hp-25);particle(boss.x-camera+40,floor()-60,"#d7f2ff",18,5)}
+}
+function gameOver(){
+ playing=false;
+ document.querySelector(".panel h1").innerHTML="HÀNH TRÌNH<br>TẠM DỪNG";
+ document.querySelector(".panel p").innerHTML="Kiếm sĩ cần nghỉ ngơi trước khi tiếp tục.";
+ document.getElementById("startBtn").textContent="CHƠI LẠI";
+ document.getElementById("startScreen").style.display="flex";
+}
+document.getElementById("startBtn").addEventListener("click",()=>{
+ reset();playing=true;document.getElementById("startScreen").style.display="none";
+});
+function bindHold(id,down,up){
+ let el=document.getElementById(id);
+ el.addEventListener("pointerdown",e=>{e.preventDefault();el.classList.add("down");down()});
+ const release=e=>{el.classList.remove("down");up&&up()};
+ el.addEventListener("pointerup",release);el.addEventListener("pointercancel",release);
+ el.addEventListener("lostpointercapture",release);
+}
+bindHold("left",()=>keys.left=true,()=>keys.left=false);
+bindHold("right",()=>keys.right=true,()=>keys.right=false);
+bindHold("jump",jump);
+bindHold("dash",dash);
+bindHold("skill",skill);
+bindHold("attack",attack);
 addEventListener("keydown",e=>{
  if(e.key==="ArrowLeft"||e.key==="a")keys.left=true;
  if(e.key==="ArrowRight"||e.key==="d")keys.right=true;
- if(e.key==="ArrowUp"||e.key==="w"||e.key===" ")jump();
+ if(e.key===" "||e.key==="ArrowUp")jump();
  if(e.key==="j")attack();
  if(e.key==="k")skill();
- if(e.key==="l")dash();
- if(e.key==="e")interact();
+ if(e.key==="Shift")dash();
 });
 addEventListener("keyup",e=>{
  if(e.key==="ArrowLeft"||e.key==="a")keys.left=false;
  if(e.key==="ArrowRight"||e.key==="d")keys.right=false;
 });
-
-let lastTap=0;
-canvas.addEventListener("pointerdown",()=>{
- const now=Date.now();
- if(now-lastTap<300)interact();
- lastTap=now;
-});
-
-render();
+reset();draw();
 </script>
 </body>
 </html>
-
