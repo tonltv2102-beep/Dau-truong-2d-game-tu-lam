@@ -1,1 +1,416 @@
+HTML
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Kiếm Sĩ Lang Thang</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none}
+html,body,#gameBox{width:100%;height:100%;overflow:hidden;background:#101725;font-family:Arial;touch-action:none}
+#gameBox{position:fixed;inset:0}
+canvas{width:100%;height:100%;display:block}
+#hud{position:absolute;top:12px;left:12px;width:min(210px,43vw);color:white;text-shadow:1px 2px 3px black;pointer-events:none}
+.name{color:#f5d18c;font-weight:bold;font-size:13px;margin-bottom:5px}
+.bar{height:11px;background:#252735;border:1px solid #aaa;border-radius:5px;overflow:hidden;margin-bottom:5px}
+.fill{height:100%;width:100%}
+#hp{background:linear-gradient(90deg,#a5162e,#ff5866)}
+#xp{width:0;background:#58c9ff}
+#stats{font-size:11px}
+#bossHud{display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(300px,55vw);color:white;text-align:center;font-size:12px;text-shadow:1px 2px 3px black}
+#bossHp{background:#ed334d}
+#controls{position:absolute;inset:0;pointer-events:none}
+.btn{position:absolute;border:1px solid #ffffff55;background:#c9e0ff20;color:white;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:bold;text-shadow:1px 2px 3px black;pointer-events:auto;touch-action:none}
+#left{width:58px;height:58px;left:4%;bottom:7%}
+#right{width:58px;height:58px;left:17%;bottom:7%}
+#jump{width:58px;height:58px;right:5%;bottom:7%}
+#attack{width:76px;height:76px;right:19%;bottom:16%;font-size:30px}
+#skill{width:53px;height:53px;right:31%;bottom:6%}
+#dash{width:50px;height:50px;right:6%;bottom:29%}
+#message{position:absolute;top:24%;left:50%;transform:translateX(-50%);color:#ffe4a1;text-shadow:2px 2px 4px black;font-size:14px;pointer-events:none;text-align:center}
+#startScreen{position:absolute;inset:0;background:linear-gradient(#101c31eF,#080d18f5);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:17px;color:white;text-align:center;z-index:5;padding:20px}
+#startScreen h1{font-size:clamp(25px,6vw,48px);color:#f3d18b;text-shadow:0 0 20px #a76b38}
+#startScreen p{font-size:13px;color:#d0d9e6}
+#start{padding:14px 40px;border:1px solid #f0c77e;border-radius:7px;background:linear-gradient(#b47a42,#633719);color:white;font-size:17px;font-weight:bold}
+@media(orientation:portrait){
+ #left,#right,#jump{width:49px;height:49px}
+ #attack{width:65px;height:65px;right:18%;bottom:16%}
+ #skill{width:46px;height:46px}
+ #dash{width:45px;height:45px}
+}
+</style>
+</head>
+<body>
+<div id="gameBox">
+<canvas id="game"></canvas>
+
+<div id="hud">
+ <div class="name">KIẾM SĨ LANG THANG</div>
+ <div class="bar"><div class="fill" id="hp"></div></div>
+ <div class="bar"><div class="fill" id="xp"></div></div>
+ <div id="stats">HP: 100 | Cấp 1</div>
+</div>
+
+<div id="bossHud">
+ <div id="bossName">KẺ CANH GIỮ RỪNG</div>
+ <div class="bar"><div class="fill" id="bossHp"></div></div>
+</div>
+
+<div id="message"></div>
+
+<div id="controls">
+ <div class="btn" id="left">◀</div>
+ <div class="btn" id="right">▶</div>
+ <div class="btn" id="jump">↑</div>
+ <div class="btn" id="attack">⚔</div>
+ <div class="btn" id="skill">✦</div>
+ <div class="btn" id="dash">»</div>
+</div>
+
+<div id="startScreen">
+ <h1>KIẾM SĨ LANG THANG</h1>
+ <p>Một hành trình mới đang chờ đợi...</p>
+ <p>Khám phá rừng sâu, gặp gỡ NPC và chiến đấu với Boss.</p>
+ <button id="start">BẮT ĐẦU</button>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+let W=innerWidth,H=innerHeight,D=1;
+function resize(){
+ W=innerWidth;H=innerHeight;
+ D=Math.min(devicePixelRatio||1,2);
+ canvas.width=W*D;canvas.height=H*D;
+ ctx.setTransform(D,0,0,D,0,0);
+}
+addEventListener("resize",resize);resize();
+
+const ground=()=>H*.79;
+const world=6500;
+let camera=0,running=false,last=0,clock=0,shake=0,msgTime=0;
+const hero={x:150,y:0,w:32,h:54,vx:0,vy:0,speed:220,hp:100,maxHp:100,xp:0,level:1,face:1,onGround:false,attack:0,attackCD:0,skillCD:0,dashCD:0,dashTime:0,inv:0};
+hero.y=ground()-hero.h;
+
+const keys={left:false,right:false};
+let particles=[],texts=[];
+const npcs=[
+ {x:650,name:"Lữ khách",color:"#b58a62",talk:"Con đường phía trước đầy quái vật. Hãy cẩn thận!"},
+ {x:1900,name:"Thợ săn",color:"#789c8c",talk:"Thanh kiếm của cậu có thể mạnh hơn nếu luyện tập."},
+ {x:3700,name:"Nhà thám hiểm",color:"#bd8d59",talk:"Lãnh địa phía trước là nơi Boss trú ngụ."}
+];
+
+let enemies=[];
+function spawnEnemies(){
+ enemies=[];
+ for(let i=0;i<15;i++){
+  enemies.push({x:430+i*340,w:34,h:40,hp:45,max:45,speed:45+i%3*8,damage:8,alive:true,cd:0,face:1,type:i%3});
+ }
+ enemies.push({x:5200,w:42,h:48,hp:90,max:90,speed:65,damage:12,alive:true,cd:0,face:1,type:3});
+}
+spawnEnemies();
+
+let boss={x:5900,w:90,h:112,hp:200,max:200,speed:55,damage:16,alive:true,cd:1,rage:0,rageUsed:false,face:-1};
+
+function say(t,d=2.2){
+ document.getElementById("message").textContent=t;
+ msgTime=d;
+}
+function particle(x,y,color,size=5,life=.5,vx=0,vy=0){
+ particles.push({x,y,color,size,life,max:life,vx,vy});
+}
+function floatText(x,y,t,color="#ffe5a0"){
+ texts.push({x,y,t,color,life:.8});
+}
+function gainXP(n){
+ hero.xp+=n;
+ if(hero.xp>=100){
+  hero.xp-=100;hero.level++;
+  hero.maxHp+=10;hero.hp=hero.maxHp;
+  say("LÊN CẤP "+hero.level+"!");
+ }
+}
+function hurtEnemy(e,n){
+ if(!e.alive)return;
+ e.hp-=n;
+ floatText(e.x,e.y-20,"-"+n);
+ for(let i=0;i<7;i++)particle(e.x,e.y,"#e8c48c",4,.4,(Math.random()-.5)*100,(Math.random()-.5)*100);
+ if(e.hp<=0){
+  e.alive=false;gainXP(25);say("Đã đánh bại quái vật!");
+ }
+}
+function hitBoss(n){
+ if(!boss.alive)return;
+ boss.hp=Math.max(0,boss.hp-n);
+ floatText(boss.x,boss.y-25,"-"+n,"#ffd27c");
+ shake=5;
+ if(boss.hp<=0){
+  boss.alive=false;gainXP(100);say("BẠN ĐÃ ĐÁNH BẠI BOSS!");
+ }
+}
+function attack(){
+ if(hero.attackCD>0)return;
+ hero.attack=.25;hero.attackCD=.36;
+ for(const e of enemies){
+  if(e.alive&&Math.abs(e.x-hero.x)<95&&(e.x-hero.x)*hero.face>-20)hurtEnemy(e,20);
+ }
+ if(boss.alive&&Math.abs(boss.x-hero.x)<125&&(boss.x-hero.x)*hero.face>-25)hitBoss(20);
+}
+function skill(){
+ if(hero.skillCD>0)return;
+ hero.skillCD=4;hero.attack=.4;
+ for(let i=0;i<25;i++)particle(hero.x+hero.face*35,hero.y+25,"#9deaff",5,.6,hero.face*(40+Math.random()*160),(Math.random()-.5)*140);
+ for(const e of enemies)if(e.alive&&Math.abs(e.x-hero.x)<170)hurtEnemy(e,35);
+ if(boss.alive&&Math.abs(boss.x-hero.x)<190)hitBoss(35);
+ say("KIẾM PHONG!");
+}
+function dash(){
+ if(hero.dashCD>0)return;
+ hero.dashCD=2;hero.dashTime=.22;hero.inv=.35;hero.vx=hero.face*650;
+ for(let i=0;i<10;i++)particle(hero.x,hero.y+30,"#a7dcff",5,.3,-hero.face*Math.random()*120,(Math.random()-.5)*70);
+}
+function jump(){
+ if(hero.onGround){hero.vy=-430;hero.onGround=false;}
+}
+function interact(){
+ let n=npcs.find(a=>Math.abs(a.x-hero.x)<100);
+ if(n)say(n.talk,3);
+ else say("Không có ai ở gần đây.",1.5);
+}
+
+function update(dt){
+ clock+=dt;
+ hero.attackCD=Math.max(0,hero.attackCD-dt);
+ hero.skillCD=Math.max(0,hero.skillCD-dt);
+ hero.dashCD=Math.max(0,hero.dashCD-dt);
+ hero.dashTime=Math.max(0,hero.dashTime-dt);
+ hero.attack=Math.max(0,hero.attack-dt);
+ hero.inv=Math.max(0,hero.inv-dt);
+
+ if(msgTime>0){msgTime-=dt;if(msgTime<=0)document.getElementById("message").textContent="";}
+
+ if(keys.left){hero.face=-1;if(hero.dashTime<=0)hero.vx=-hero.speed;}
+ else if(keys.right){hero.face=1;if(hero.dashTime<=0)hero.vx=hero.speed;}
+ else if(hero.dashTime<=0){hero.vx*=.78;if(Math.abs(hero.vx)<5)hero.vx=0;}
+
+ hero.x=Math.max(20,Math.min(world-30,hero.x+hero.vx*dt));
+ hero.vy+=1100*dt;hero.y+=hero.vy*dt;
+ if(hero.y+hero.h>=ground()){hero.y=ground()-hero.h;hero.vy=0;hero.onGround=true;}
+ else hero.onGround=false;
+
+ camera=Math.max(0,Math.min(world-W,hero.x-W*.43));
+
+ for(const e of enemies){
+  if(!e.alive)continue;
+  e.cd=Math.max(0,e.cd-dt);
+  let dx=hero.x-e.x,dist=Math.abs(dx);
+  if(dist<350){
+   e.face=dx>=0?1:-1;
+   if(dist>48)e.x+=e.face*e.speed*dt;
+   else if(e.cd<=0){
+    e.cd=1.3;
+    if(hero.inv<=0){hero.hp-=e.damage;hero.inv=.5;shake=4;floatText(hero.x,hero.y-10,"-"+e.damage,"#ff6969");}
+   }
+  }
+ }
+ if(boss.alive){
+  boss.cd=Math.max(0,boss.cd-dt);
+  if(boss.hp<=boss.max*.3&&!boss.rageUsed){
+   boss.rageUsed=true;boss.rage=60;boss.speed=hero.speed;boss.damage=20;
+   say("BOSS CUỒNG NỘ!");
+   shake=10;
+  }
+  if(boss.rage>0){
+   boss.rage=Math.max(0,boss.rage-dt);
+   if(boss.rage===0){boss.speed=55;boss.damage=16;say("Boss đã hết cuồng nộ!");}
+  }
+  let dx=hero.x-boss.x,dist=Math.abs(dx);
+  if(dist<500){
+   boss.face=dx>=0?1:-1;
+   if(dist>85)boss.x+=boss.face*boss.speed*dt;
+   else if(boss.cd<=0){
+    boss.cd=boss.rage>0?1:1.6;
+    if(hero.inv<=0){hero.hp-=boss.damage;hero.inv=.65;shake=8;floatText(hero.x,hero.y-10,"-"+boss.damage,"#ff4545");}
+   }
+  }
+ }
+
+ for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=100*dt;p.life-=dt;}
+ particles=particles.filter(p=>p.life>0);
+ for(const t of texts){t.y-=35*dt;t.life-=dt;}
+ texts=texts.filter(t=>t.life>0);
+ shake=Math.max(0,shake-25*dt);
+ hero.hp=Math.max(0,Math.min(hero.maxHp,hero.hp));
+
+ document.getElementById("hp").style.width=hero.hp/hero.maxHp*100+"%";
+ document.getElementById("xp").style.width=hero.xp+"%";
+ document.getElementById("stats").textContent="HP: "+Math.ceil(hero.hp)+" | Cấp "+hero.level;
+ document.getElementById("bossHud").style.display=boss.alive&&hero.x>4700?"block":"none";
+ document.getElementById("bossHp").style.width=boss.hp/boss.max*100+"%";
+
+ if(hero.hp<=0){running=false;document.getElementById("startScreen").style.display="flex";document.querySelector("#startScreen h1").textContent="BẠN ĐÃ THẤT BẠI";document.querySelector("#start").textContent="CHƠI LẠI";}
+}
+
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
+function sky(){
+ let g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#111e39");g.addColorStop(.6,"#536477");g.addColorStop(1,"#d18d69");
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle="#fff0c8";ctx.beginPath();ctx.arc(W*.78,H*.17,Math.min(W,H)*.055,0,Math.PI*2);ctx.fill();
+ for(let i=0;i<12;i++){
+  let x=i*230-camera*.18,y=H*.59+(i%3)*12;
+  ctx.fillStyle="#29394a";ctx.beginPath();ctx.moveTo(x-90,H);ctx.lineTo(x+40,y-145);ctx.lineTo(x+170,H);ctx.fill();
+ }
+}
+function forest(){
+ let g=ground();
+ for(let i=-2;i<35;i++){
+  let x=i*185-camera*.45%185,h=100+(i*37%65);
+  rect(x+35,g-h,16,h,"#263a32");
+  rect(x,g-h+10,85,55,"#1a3c31");
+  rect(x+12,g-h-20,62,48,"#28513b");
+ }
+ rect(0,g,W,H-g,"#39302b");
+ rect(0,g,W,9,"#557344");
+ rect(0,g+9,W,5,"#344a32");
+ for(let i=0;i<80;i++){
+  let x=(i*137-camera*.9)%(W+40),y=g+15+(i*23%Math.max(25,H-g-20));
+  if(i%3===0)rect(x,y,8,5,"#776653");
+  else rect(x,y,3,7,"#819b53");
+ }
+ for(let i=-2;i<20;i++){
+  let x=i*300-camera%300;
+  rect(x+35,g-90,18,90,"#493129");
+  rect(x,g-140,90,65,"#193a2d");
+  rect(x+13,g-175,65,55,"#24523a");
+  rect(x+25,g-195,42,35,"#386746");
+ }
+}
+function drawHero(){
+ let x=hero.x-camera,y=hero.y;
+ let step=Math.abs(hero.vx)>15?Math.sin(clock*13)*4:0;
+ ctx.save();ctx.translate(x+hero.w/2,y);if(hero.face<0)ctx.scale(-1,1);
+ if(hero.inv>0&&Math.floor(clock*18)%2===0)ctx.globalAlpha=.4;
+ ctx.fillStyle="#222";ctx.beginPath();ctx.ellipse(0,hero.h+2,21,5,0,0,Math.PI*2);ctx.fill();
+ rect(-12,38+step,9,15,"#28303b");rect(3,38-step,9,15,"#28303b");
+ rect(-13,49+step,12,6,"#171d27");rect(2,49-step,13,6,"#171d27");
+ rect(-13,18,27,23,"#344b61");rect(-10,20,20,19,"#52677a");
+ rect(-13,37,27,4,"#b28a50");
+ rect(-5,12,11,9,"#dca47b");rect(-11,0,23,17,"#e1b28a");
+ rect(-12,-3,25,9,"#282b37");rect(-10,-7,20,8,"#3e4655");
+ rect(-8,5,4,3,"#25222a");rect(4,5,4,3,"#25222a");
+ rect(-15,18,8,23,"#8c2936");rect(-20,34,8,15,"#9e3540");
+ rect(10,22,8,13,"#dca47b");
+ if(hero.attack>0){
+  ctx.save();ctx.translate(12,27);ctx.rotate(-.9);rect(0,-3,52,5,"#d9e6e9");rect(-8,-3,12,5,"#a87b4a");ctx.restore();
+ }else{
+  rect(14,24,6,35,"#d9e6e9");rect(11,32,12,4,"#a87b4a");rect(15,59,4,10,"#a87b4a");
+ }
+ ctx.restore();
+}
+function drawEnemy(e){
+ let x=e.x-camera,y=ground()-e.h;
+ let c=["#a64d43","#596c4b","#65517f","#5b3734"][e.type];
+ rect(x+7,y+10,23,25,c);rect(x+5,y+3,26,17,c);
+ rect(x+8,y,7,8,"#d6b29b");rect(x+23,y,7,8,"#d6b29b");
+ rect(x+10,y+11,4,4,"#ffdf7d");rect(x+23,y+11,4,4,"#ffdf7d");
+ rect(x+8,y+34,7,9,"#29272d");rect(x+23,y+34,7,9,"#29272d");
+ if(e.hp<e.max){rect(x,y-9,38,4,"#29252a");rect(x,y-9,38*e.hp/e.max,4,"#ed5454");}
+}
+function drawNPC(n){
+ let x=n.x-camera,y=ground()-49;
+ rect(x+8,y+16,20,26,n.color);rect(x+8,y,20,19,"#e2b58d");
+ rect(x+6,y-3,23,8,"#473a34");rect(x+12,y+42,6,8,"#252a35");rect(x+22,y+42,6,8,"#252a35");
+ ctx.fillStyle="#fff0bb";ctx.font="11px Arial";ctx.textAlign="center";ctx.fillText(n.name,x+18,y-12);
+ if(Math.abs(hero.x-n.x)<100)ctx.fillText("GẶP GỠ",x+18,y-25);
+}
+function drawBoss(){
+ if(!boss.alive)return;
+ let x=boss.x-camera,y=ground()-boss.h,r=boss.rage>0;
+ rect(x+13,y+35,65,65,r?"#852b35":"#343c4a");
+ rect(x+20,y+39,50,50,r?"#bd3b3d":"#536171");
+ rect(x+7,y+45,18,34,"#252b38");rect(x+67,y+45,18,34,"#252b38");
+ rect(x+21,y+8,49,39,"#60443c");
+ rect(x+13,y+13,15,21,"#3d3235");rect(x+65,y+13,15,21,"#3d3235");
+ rect(x+31,y+22,9,7,r?"#ff3939":"#f6c45b");rect(x+53,y+22,9,7,r?"#ff3939":"#f6c45b");
+ rect(x+22,y,8,16,"#c0c0b3");rect(x+62,y,8,16,"#c0c0b3");
+ rect(x+22,y+94,17,21,"#282b34");rect(x+55,y+94,17,21,"#282b34");
+ rect(x+80,y+53,9,50,"#a7b5c4");rect(x+75,y+48,18,8,"#d0a05c");
+ if(r){ctx.strokeStyle="#ff4949";ctx.lineWidth=4;ctx.beginPath();ctx.arc(x+45,y+55,75+Math.sin(clock*10)*5,0,Math.PI*2);ctx.stroke();}
+}
+function render(){
+ ctx.save();
+ if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+ sky();forest();
+ for(const n of npcs)drawNPC(n);
+ for(const e of enemies)if(e.alive&&e.x>camera-80&&e.x<camera+W+80)drawEnemy(e);
+ drawBoss();drawHero();
+ for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);rect(p.x-camera,p.y,p.size,p.size,p.color);}
+ ctx.globalAlpha=1;
+ for(const t of texts){ctx.globalAlpha=Math.max(0,t.life);ctx.fillStyle=t.color;ctx.font="bold 16px Arial";ctx.textAlign="center";ctx.fillText(t.t,t.x-camera,t.y);}
+ ctx.globalAlpha=1;
+ ctx.fillStyle="#ffffff80";ctx.font="13px Arial";ctx.textAlign="center";
+ ctx.fillText(hero.x<1500?"RỪNG SƯƠNG MÙ":hero.x<3200?"THUNG LŨNG CỔ":hero.x<4800?"RỪNG BỊ LÃNG QUÊN":"LÃNH ĐỊA BOSS",W/2,H*.25);
+ ctx.restore();
+}
+function loop(t){
+ if(!running)return;
+ let dt=Math.min((t-last)/1000,.033);last=t;
+ update(dt);render();requestAnimationFrame(loop);
+}
+function startGame(){
+ document.getElementById("startScreen").style.display="none";
+ running=true;last=performance.now();requestAnimationFrame(loop);
+ say("Hành trình bắt đầu!",2);
+}
+document.getElementById("start").addEventListener("click",()=>{
+ if(hero.hp<=0){
+  hero.x=150;hero.hp=hero.maxHp;hero.xp=0;hero.level=1;
+  boss={x:5900,w:90,h:112,hp:200,max:200,speed:55,damage:16,alive:true,cd:1,rage:0,rageUsed:false,face:-1};
+  spawnEnemies();particles=[];texts=[];
+ }
+ startGame();
+});
+
+function bind(id,down,up){
+ let el=document.getElementById(id);
+ el.addEventListener("pointerdown",e=>{e.preventDefault();el.setPointerCapture(e.pointerId);down();});
+ el.addEventListener("pointerup",e=>{e.preventDefault();up();});
+ el.addEventListener("pointercancel",up);
+ el.addEventListener("lostpointercapture",up);
+}
+bind("left",()=>keys.left=true,()=>keys.left=false);
+bind("right",()=>keys.right=true,()=>keys.right=false);
+bind("jump",jump,()=>{});
+bind("attack",attack,()=>{});
+bind("skill",skill,()=>{});
+bind("dash",dash,()=>{});
+
+addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")keys.left=true;
+ if(e.key==="ArrowRight"||e.key==="d")keys.right=true;
+ if(e.key==="ArrowUp"||e.key==="w"||e.key===" ")jump();
+ if(e.key==="j")attack();
+ if(e.key==="k")skill();
+ if(e.key==="l")dash();
+ if(e.key==="e")interact();
+});
+addEventListener("keyup",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")keys.left=false;
+ if(e.key==="ArrowRight"||e.key==="d")keys.right=false;
+});
+
+let lastTap=0;
+canvas.addEventListener("pointerdown",()=>{
+ const now=Date.now();
+ if(now-lastTap<300)interact();
+ lastTap=now;
+});
+
+render();
+</script>
+</body>
+</html>
 
