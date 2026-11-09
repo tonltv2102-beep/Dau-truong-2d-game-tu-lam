@@ -1,1 +1,4668 @@
 
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#10152b">
+<title>Go to Wonderland</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10152b;color:#fff;font-family:Arial,sans-serif;touch-action:none}
+button{font:inherit;color:white;border:1px solid #6579a7;background:#25365c;border-radius:10px;padding:10px}
+button:active{background:#526da8}
+#app{position:relative;width:100%;height:100%;overflow:hidden;background:linear-gradient(#19264c,#273d54 65%,#182b31)}
+#gameCanvas{position:absolute;width:100%;height:100%;inset:0;image-rendering:pixelated}
+.screen{position:absolute;inset:0;display:none;overflow:auto;background:linear-gradient(145deg,#10172ceF,#1b2948ed);padding:18px}
+.screen.active{display:flex;flex-direction:column}
+.center{align-items:center;justify-content:center;text-align:center}
+.logo{font-size:clamp(30px,8vw,58px);font-weight:900;color:#ffe58b;text-shadow:4px 4px #75482e,0 0 25px #f5b94c}
+.subtitle{color:#c4d5ef;letter-spacing:4px;margin:8px}
+.panel{background:#182746eF;border:2px solid #647ca8;border-radius:15px;padding:15px;max-width:650px;width:100%;margin:8px auto}
+.menuButton{width:min(90%,300px);padding:15px;margin:6px auto;font-weight:bold;background:linear-gradient(120deg,#405f91,#293d69);border:2px solid #8ba8d8}
+h2{color:#ffe08b;margin:8px 0 15px}
+.row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.muted{color:#b5c5df;font-size:13px}
+#hud{position:absolute;inset:0;display:none;pointer-events:none}
+#topbar{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hudbox{background:#101a32d9;border:1px solid #7188ae;border-radius:9px;padding:7px 10px;font-size:12px}
+.bar{height:9px;background:#442d3a;border-radius:8px;overflow:hidden;margin-top:4px;width:130px}
+.bar>i{display:block;height:100%;width:100%;background:#e64c5b}
+#xpbar{background:#29486b}
+#xpbar i{background:#55c8ee}
+#controls{position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:end}
+.pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,44px);gap:4px}
+.pad button,.actions button{background:#182b4dcc;border:2px solid #829bc3;opacity:.88;font-weight:bold}
+.pad button{font-size:20px;padding:0}
+.actions{display:flex;align-items:end;gap:7px}
+.actions button{width:51px;height:51px;border-radius:50%;padding:0}
+.actions .attack{width:68px;height:68px;background:#9c3d45;border-color:#ffb2a2}
+#pauseBtn{pointer-events:auto}
+#inventory{display:none;position:absolute;inset:10%;background:#14223df5;border:2px solid #829bc3;border-radius:15px;padding:15px;overflow:auto;pointer-events:auto}
+.slot{display:inline-flex;width:54px;height:54px;margin:3px;background:#263957;border:1px solid #647da5;border-radius:7px;align-items:center;justify-content:center;font-size:22px}
+#toast{position:absolute;top:22%;left:50%;transform:translateX(-50%);background:#14223dee;border:1px solid #e8ce80;border-radius:10px;padding:10px;display:none;text-align:center;pointer-events:none}
+@media(orientation:landscape){
+ .pad{grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,48px)}
+ .actions button{width:55px;height:55px}
+ .actions .attack{width:72px;height:72px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="gameCanvas"></canvas>
+
+<section id="home" class="screen active center">
+ <div class="logo">GO TO<br>WONDERLAND</div>
+ <div class="subtitle">A PIXEL FANTASY ADVENTURE</div>
+ <div class="panel">
+  <p>Vùng đất thần tiên đang bị bóng tối xâm chiếm.</p>
+  <p>Hãy bắt đầu hành trình khám phá sáu vùng đất.</p>
+ </div>
+ <button class="menuButton" onclick="newAdventure()">BẮT ĐẦU CUỘC PHIÊU LƯU</button>
+ <button class="menuButton" onclick="showScreen('slots')">Ô LƯU TRỮ</button>
+ <button class="menuButton" onclick="showScreen('settings')">CÀI ĐẶT</button>
+ <div class="muted">GO TO WONDERLAND • V1.0 DEVELOPMENT</div>
+</section>
+
+<section id="classes" class="screen center">
+ <h2>CHỌN NGHỀ NGHIỆP</h2>
+ <div class="panel">
+  <p>Hãy chọn con đường phiêu lưu của bạn.</p>
+  <div id="classChoices"></div>
+ </div>
+ <button class="menuButton" onclick="showScreen('home')">QUAY LẠI</button>
+</section>
+
+<section id="slots" class="screen center">
+ <h2>Ô LƯU TRỮ</h2>
+ <div class="panel" id="slotList"></div>
+ <button class="menuButton" onclick="showScreen('home')">QUAY LẠI</button>
+</section>
+
+<section id="settings" class="screen center">
+ <h2>CÀI ĐẶT</h2>
+ <div class="panel">
+  <button onclick="toggleSound()">Âm thanh: <span id="soundLabel">Bật</span></button>
+  <button onclick="fullScreen()">Toàn màn hình</button>
+  <p class="muted">Điều khiển sẽ tự điều chỉnh theo kích thước màn hình.</p>
+ </div>
+ <button class="menuButton" onclick="showScreen('home')">QUAY LẠI</button>
+</section>
+
+<section id="world" class="screen center">
+ <h2>BẢN ĐỒ WONDERLAND</h2>
+ <div class="panel" id="regionList"></div>
+ <button class="menuButton" onclick="startLevel()">VÀO MÀN CHƠI</button>
+ <button class="menuButton" onclick="showScreen('home')">QUAY LẠI</button>
+</section>
+
+<div id="hud">
+ <div id="topbar">
+  <div class="hudbox">
+   <b id="playerName">Nhà phiêu lưu</b>
+   <div>Lv. <span id="levelText">1</span> · <span id="classText">Chiến binh</span></div>
+   <div class="bar"><i id="hpFill"></i></div>
+   <div class="bar" id="xpbar"><i id="xpFill"></i></div>
+   <div id="hpText">100 / 100 HP</div>
+  </div>
+  <div class="row">
+   <button id="pauseBtn" onclick="pauseGame()">Ⅱ</button>
+   <button onclick="openInventory()">🎒</button>
+  </div>
+ </div>
+ <div id="controls">
+  <div class="pad">
+   <span></span><button data-key="up">▲</button><span></span>
+   <button data-key="left">◀</button><button data-key="down">▼</button><button data-key="right">▶</button>
+  </div>
+  <div class="actions">
+   <button data-action="dodge">↗</button>
+   <button data-action="skill">✦</button>
+   <button data-action="jump">↑</button>
+   <button class="attack" data-action="attack">⚔</button>
+  </div>
+ </div>
+</div>
+
+<div id="inventory">
+ <div class="row"><h2>TÚI ĐỒ</h2><button onclick="closeInventory()">Đóng ✕</button></div>
+ <p>Vật phẩm: <span id="itemCount">0</span>/100</p>
+ <div id="itemGrid"></div>
+ <p class="muted">Trang bị và vật phẩm sẽ được mở rộng trong các phần tiếp theo.</p>
+</div>
+
+<div id="toast"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ===== PHẦN 1: CẤU HÌNH NỀN TẢNG ===== */
+const CONFIG={
+ title:"Go to Wonderland",
+ version:"1.0",
+ maxLevel:100,
+ inventorySize:100,
+ saveSlots:3,
+ regionCount:6,
+ screensPerRegion:12
+};
+
+const REGIONS=[
+ {name:"Rừng Cổ Đại",icon:"🌲",color:"#285b43"},
+ {name:"Hầm Ngục Bị Lãng Quên",icon:"🏰",color:"#45465d"},
+ {name:"Núi Tuyết Vĩnh Cửu",icon:"❄️",color:"#7898b8"},
+ {name:"Vùng Đất Lửa",icon:"🔥",color:"#9a4934"},
+ {name:"Quần Đảo Trên Mây",icon:"☁️",color:"#557f9b"},
+ {name:"Vương Quốc Bóng Tối",icon:"🌑",color:"#382b55"}
+];
+
+const CLASSES=[
+ {id:"warrior",name:"Chiến binh",icon:"⚔️",desc:"Cận chiến, phòng thủ tốt."},
+ {id:"mage",name:"Pháp sư",icon:"🔮",desc:"Ma thuật mạnh, tấn công tầm xa."},
+ {id:"archer",name:"Cung thủ",icon:"🏹",desc:"Tấn công xa, tốc độ cao."},
+ {id:"assassin",name:"Sát thủ",icon:"🗡️",desc:"Nhanh nhẹn, né tránh tốt."},
+ {id:"paladin",name:"Hiệp sĩ",icon:"🛡️",desc:"Bền bỉ, có khả năng hồi phục."},
+ {id:"summoner",name:"Triệu hồi sư",icon:"✨",desc:"Triệu hồi trợ thủ trong chiến đấu."}
+];
+
+const createPlayer=classId=>({
+ classId,level:1,xp:0,xpNext:100,
+ hp:100,maxHp:100,attack:12,defense:5,
+ gold:100,diamonds:0,region:0,stage:1,
+ inventory:[],equipment:{},skillPoints:0
+});
+
+let game={
+ player:null,slot:0,playing:false,paused:false,
+ sound:true,keys:{},camera:0,frame:0,
+ enemies:[],loot:[],particles:[],
+ worldTime:0
+};
+
+/* ===== GIAO DIỆN ===== */
+const $=id=>document.getElementById(id);
+
+function showScreen(id){
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ $(id).classList.add("active");
+ $("hud").style.display="none";
+}
+
+function notify(message){
+ const t=$("toast");
+ t.textContent=message;t.style.display="block";
+ clearTimeout(notify.timer);
+ notify.timer=setTimeout(()=>t.style.display="none",1800);
+}
+
+function buildClassChoices(){
+ $("classChoices").innerHTML=CLASSES.map(c=>
+ `<button class="menuButton" onclick="chooseClass('${c.id}')">
+ ${c.icon} ${c.name}<br><small>${c.desc}</small></button>`
+ ).join("");
+}
+
+function chooseClass(id){
+ game.player=createPlayer(id);
+ game.player.classMastery={};
+ saveGame();
+ updateHUD();
+ showScreen("world");
+}
+
+function buildRegions(){
+ $("regionList").innerHTML=REGIONS.map((r,i)=>
+ `<button class="menuButton" ${i>0?"disabled":""}>
+ ${r.icon} ${r.name}<br><small>${i===0?"Đã mở khóa":"Chưa mở khóa"}</small>
+ </button>`
+ ).join("");
+}
+
+function newAdventure(){
+ showScreen("classes");
+}
+
+function updateHUD(){
+ if(!game.player)return;
+ const p=game.player;
+ $("levelText").textContent=p.level;
+ $("classText").textContent=CLASSES.find(c=>c.id===p.classId).name;
+ $("hpFill").style.width=(p.hp/p.maxHp*100)+"%";
+ $("xpFill").style.width=(p.xp/p.xpNext*100)+"%";
+ $("hpText").textContent=`${Math.ceil(p.hp)} / ${p.maxHp} HP`;
+}
+
+/* ===== LƯU DỮ LIỆU ===== */
+function saveKey(slot){return "wonderland_save_"+slot;}
+
+function saveGame(){
+ if(!game.player)return;
+ try{
+  localStorage.setItem(saveKey(game.slot),JSON.stringify({
+   player:game.player,version:CONFIG.version,date:Date.now()
+  }));
+ }catch(e){notify("Không thể lưu dữ liệu trên thiết bị.");}
+}
+
+function loadGame(slot){
+ try{
+  const data=JSON.parse(localStorage.getItem(saveKey(slot)));
+  if(!data||!data.player)return false;
+  game.player=data.player;game.slot=slot;
+  updateHUD();showScreen("world");
+  return true;
+ }catch(e){return false;}
+}
+
+function buildSlots(){
+ $("slotList").innerHTML="";
+ for(let i=0;i<CONFIG.saveSlots;i++){
+  const data=localStorage.getItem(saveKey(i));
+  const b=document.createElement("button");
+  b.className="menuButton";
+  b.textContent=data?`Ô ${i+1} · Tiếp tục`:`Ô ${i+1} · Trống`;
+  b.onclick=()=>{
+   if(data){
+    if(!loadGame(i))notify("Dữ liệu lưu không hợp lệ.");
+   }else{
+    game.slot=i;showScreen("classes");
+   }
+  };
+  $("slotList").appendChild(b);
+ }
+}
+
+/* ===== ÂM THANH VÀ TOÀN MÀN HÌNH ===== */
+function toggleSound(){
+ game.sound=!game.sound;
+ $("soundLabel").textContent=game.sound?"Bật":"Tắt";
+}
+
+function fullScreen(){
+ if(!document.fullscreenElement){
+  document.documentElement.requestFullscreen?.();
+ }else document.exitFullscreen?.();
+}
+
+/* ===== CANVAS VÀ THẾ GIỚI ===== */
+const canvas=$("gameCanvas");
+const ctx=canvas.getContext("2d");
+let W=0,H=0,ground=0;
+
+function resize(){
+ const dpr=Math.min(devicePixelRatio||1,2);
+ W=innerWidth;H=innerHeight;
+ canvas.width=Math.floor(W*dpr);
+ canvas.height=Math.floor(H*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ ground=H*.78;
+}
+addEventListener("resize",resize);
+resize();
+
+function drawSky(){
+ const g=ctx.createLinearGradient(0,0,0,H);
+ g.addColorStop(0,"#17284c");
+ g.addColorStop(.65,"#54758a");
+ g.addColorStop(1,"#253d42");
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<55;i++){
+  const x=(i*137-game.camera*.12)%(W+30);
+  const y=(i*71)%Math.max(100,ground*.65);
+  ctx.fillStyle=i%3?"#dce8d4":"#ffe9a5";
+  ctx.fillRect((x+W+30)%(W+30),y,2,2);
+ }
+ ctx.fillStyle="#345a50";
+ for(let i=0;i<14;i++){
+  let x=(i*115-game.camera*.3)%(W+120);
+  if(x< -100)x+=W+120;
+  ctx.beginPath();ctx.moveTo(x,ground-55);
+  ctx.lineTo(x+55,ground-160-(i%3)*25);
+  ctx.lineTo(x+115,ground-55);ctx.fill();
+ }
+ ctx.fillStyle="#273c36";ctx.fillRect(0,ground,W,H-ground);
+ ctx.fillStyle="#52794c";ctx.fillRect(0,ground,W,9);
+}
+
+function drawPlayer(){
+ const x=W*.35,y=ground-48;
+ ctx.save();
+ ctx.translate(x,y);
+ const bob=Math.sin(game.frame*.12)*2;
+ ctx.fillStyle="#171d31";ctx.fillRect(-10,35+bob,9,12);
+ ctx.fillRect(3,35-bob,9,12);
+ ctx.fillStyle=game.player.classId==="mage"?"#7656b9":
+ game.player.classId==="archer"?"#398a63":
+ game.player.classId==="assassin"?"#45445e":
+ game.player.classId==="paladin"?"#b8b9a0":
+ game.player.classId==="summoner"?"#8a55a8":"#b34e46";
+ ctx.fillRect(-12,5,25,31);
+ ctx.fillStyle="#e6b68d";ctx.fillRect(-10,-13,21,20);
+ ctx.fillStyle="#29243a";ctx.fillRect(-11,-17,22,7);
+ ctx.fillStyle="#fff";ctx.fillRect(-5,-7,3,3);ctx.fillRect(5,-7,3,3);
+ ctx.fillStyle="#d7c18a";ctx.fillRect(-15,14,4,18);
+ ctx.fillRect(12,14,4,18);
+ ctx.restore();
+}
+
+function drawEnemy(e){
+ ctx.save();ctx.translate(e.x-game.camera,e.y);
+ ctx.fillStyle=e.elite?"#a75ac3":"#65a35c";
+ ctx.fillRect(-13,-25,26,25);
+ ctx.fillStyle="#27303d";ctx.fillRect(-9,-20,5,5);ctx.fillRect(4,-20,5,5);
+ ctx.fillStyle="#d7e5a0";ctx.fillRect(-7,-7,14,3);
+ ctx.restore();
+}
+
+function drawWorld(){
+ drawSky();
+ drawPlayer();
+ for(const e of game.enemies)drawEnemy(e);
+}
+
+function gameLoop(){
+ requestAnimationFrame(gameLoop);
+ if(!game.playing||game.paused||!game.player)return;
+ game.frame++;
+ updateWorld();
+ drawWorld();
+ updateHUD();
+}
+
+function updateWorld(){
+ const p=game.player;
+ if(game.keys.left){game.camera=Math.max(0,game.camera-3);p.x-=3;}
+ if(game.keys.right){game.camera+=3;p.x+=3;}
+ if(game.keys.up&&p.y>0)p.y-=2;
+ if(game.keys.down)p.y+=2;
+ game.enemies.forEach(e=>{
+  const px=W*.35;
+  const ex=e.x-game.camera;
+  if(Math.abs(ex-px)<250)e.x+=Math.sign(px-ex)*.45;
+ });
+ game.enemies=game.enemies.filter(e=>e.hp>0);
+ if(game.enemies.length===0&&game.frame%300===0)spawnEnemy();
+}
+
+/* ===== MÀN CHƠI CƠ BẢN ===== */
+function startLevel(){
+ game.playing=true;game.paused=false;game.frame=0;
+ game.camera=0;game.enemies=[];
+ for(let i=0;i<4;i++)spawnEnemy(350+i*220);
+ $("hud").style.display="block";
+ document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+ drawWorld();
+}
+
+function spawnEnemy(x){
+ game.enemies.push({x:x??W+game.camera+100,y:ground-25,hp:30,elite:false});
+}
+
+function pauseGame(){
+ game.paused=!game.paused;
+ if(game.paused)notify("Đã tạm dừng · Nhấn Ⅱ để tiếp tục");
+}
+
+function attack(){
+ if(!game.playing||game.paused)return;
+ const target=game.enemies.find(e=>Math.abs(e.x-game.camera-W*.35)<100);
+ if(target){
+  target.hp-=game.player.attack;
+  if(target.hp<=0){
+   game.player.xp+=20;game.player.gold+=10;
+   notify("Hạ quái! +20 EXP · +10 vàng");
+   checkLevelUp();saveGame();
+  }
+ }
+}
+
+function useSkill(){
+ if(!game.playing||game.paused)return;
+ game.enemies.forEach(e=>{
+  if(Math.abs(e.x-game.camera-W*.35)<180)e.hp-=25;
+ });
+ notify("Đã sử dụng kỹ năng!");
+}
+
+function checkLevelUp(){
+ const p=game.player;
+ while(p.xp>=p.xpNext&&p.level<CONFIG.maxLevel){
+  p.xp-=p.xpNext;p.level++;
+  p.xpNext=Math.floor(p.xpNext*1.25);
+  p.maxHp+=10;p.hp=p.maxHp;
+  p.attack+=2;p.skillPoints++;
+  notify("LÊN CẤP "+p.level+"!");
+ }
+}
+
+/* ===== ĐIỀU KHIỂN CẢM ỨNG ===== */
+document.querySelectorAll("[data-key]").forEach(b=>{
+ const key=b.dataset.key;
+ b.addEventListener("pointerdown",e=>{
+  e.preventDefault();game.keys[key]=true;b.setPointerCapture(e.pointerId);
+ });
+ ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>
+  b.addEventListener(ev,()=>game.keys[key]=false));
+});
+
+document.querySelectorAll("[data-action]").forEach(b=>{
+ b.addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  const a=b.dataset.action;
+  if(a==="attack")attack();
+  if(a==="skill")useSkill();
+  if(a==="jump")game.keys.up=true;
+  if(a==="dodge"){
+   game.camera+=25;notify("Né tránh!");
+  }
+ });
+ b.addEventListener("pointerup",()=>game.keys.up=false);
+ b.addEventListener("pointercancel",()=>game.keys.up=false);
+});
+
+/* ===== TÚI ĐỒ ===== */
+function openInventory(){
+ $("inventory").style.display="block";
+ renderInventory();
+}
+function closeInventory(){$("inventory").style.display="none";}
+
+function renderInventory(){
+ const items=game.player?.inventory||[];
+ $("itemCount").textContent=items.length;
+ $("itemGrid").innerHTML="";
+ for(let i=0;i<CONFIG.inventorySize;i++){
+  const item=items[i];
+  const el=document.createElement("span");
+  el.className="slot";el.textContent=item?.icon||"";
+  el.title=item?.name||"Ô trống";
+  $("itemGrid").appendChild(el);
+ }
+}
+
+/* ===== KHỞI ĐỘNG ===== */
+function newAdventure(){
+ buildClassChoices();showScreen("classes");
+}
+buildRegions();buildSlots();
+gameLoop();
+</script>
+</body>
+</html>
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 2/10 - NHÂN VẬT VÀ NGHỀ NGHIỆP
+   ===================================================== */
+
+const CHARACTER_SYSTEM = (() => {
+  const classData = {
+    warrior: {
+      name: "Chiến binh",
+      hp: 150,
+      attack: 16,
+      defense: 12,
+      speed: 3.5,
+      jump: 11,
+      color: "#c45a4c",
+      weapon: "Kiếm"
+    },
+    mage: {
+      name: "Pháp sư",
+      hp: 90,
+      attack: 23,
+      defense: 5,
+      speed: 3.8,
+      jump: 10,
+      color: "#8064d8",
+      weapon: "Trượng phép"
+    },
+    archer: {
+      name: "Cung thủ",
+      hp: 105,
+      attack: 18,
+      defense: 7,
+      speed: 4.5,
+      jump: 12,
+      color: "#429b65",
+      weapon: "Cung"
+    },
+    assassin: {
+      name: "Sát thủ",
+      hp: 95,
+      attack: 22,
+      defense: 6,
+      speed: 5.5,
+      jump: 13,
+      color: "#55516d",
+      weapon: "Song đao"
+    },
+    paladin: {
+      name: "Hiệp sĩ",
+      hp: 165,
+      attack: 14,
+      defense: 16,
+      speed: 3.2,
+      jump: 10,
+      color: "#c6b879",
+      weapon: "Kiếm thánh"
+    },
+    summoner: {
+      name: "Triệu hồi sư",
+      hp: 110,
+      attack: 20,
+      defense: 7,
+      speed: 3.7,
+      jump: 10,
+      color: "#a66acb",
+      weapon: "Trượng triệu hồi"
+    }
+  };
+
+  function applyClass(player, id) {
+    const data = classData[id];
+    if (!data) return false;
+
+    player.classId = id;
+    player.maxHp = data.hp + (player.level - 1) * 10;
+    player.hp = Math.min(player.hp || player.maxHp, player.maxHp);
+    player.attack = data.attack + (player.level - 1) * 2;
+    player.defense = data.defense + Math.floor((player.level - 1) / 2);
+    player.speed = data.speed;
+    player.jumpPower = data.jump;
+    player.weaponType = data.weapon;
+
+    return true;
+  }
+
+  function changeClass(player, id) {
+    if (!classData[id]) return false;
+
+    if (!player.classMastery) player.classMastery = {};
+    if (player.classId !== id) {
+      player.classMastery[player.classId] =
+        (player.classMastery[player.classId] || 0);
+    }
+
+    applyClass(player, id);
+    return true;
+  }
+
+  return { classData, applyClass, changeClass };
+})();
+
+/* Khởi tạo nghề nghiệp khi tạo nhân vật */
+const originalChooseClass = chooseClass;
+
+chooseClass = function(id) {
+  game.player = createPlayer(id);
+  CHARACTER_SYSTEM.applyClass(game.player, id);
+  game.player.classMastery = {};
+  game.player.animation = "idle";
+  game.player.facing = 1;
+  game.player.velocityY = 0;
+  game.player.onGround = true;
+  game.player.invincible = 0;
+  game.player.dodgeCooldown = 0;
+  game.player.jumpCooldown = 0;
+
+  saveGame();
+  updateHUD();
+  showScreen("world");
+};
+
+/* Hệ thống hoạt ảnh */
+const CHARACTER_ANIMATION = {
+  idle: { speed: 0.08, frames: 4 },
+  run: { speed: 0.15, frames: 6 },
+  jump: { speed: 0.10, frames: 2 },
+  attack: { speed: 0.22, frames: 4 },
+  dodge: { speed: 0.25, frames: 3 },
+  hurt: { speed: 0.12, frames: 2 }
+};
+
+function updateCharacterAnimation(player) {
+  if (!player) return;
+
+  if (!player.animationTime) player.animationTime = 0;
+  player.animationTime += 1;
+
+  if (player.invincible > 0) player.invincible--;
+  if (player.dodgeCooldown > 0) player.dodgeCooldown--;
+  if (player.jumpCooldown > 0) player.jumpCooldown--;
+
+  const moving = game.keys.left || game.keys.right;
+
+  if (!player.onGround) {
+    player.animation = "jump";
+  } else if (player.attacking) {
+    player.animation = "attack";
+  } else if (moving) {
+    player.animation = "run";
+  } else {
+    player.animation = "idle";
+  }
+}
+
+/* Chuyển động và vật lý */
+function updateCharacterPhysics() {
+  const p = game.player;
+  if (!p || !game.playing || game.paused) return;
+
+  const speed = p.speed || 3.5;
+  const floor = ground - 48;
+
+  if (game.keys.left) {
+    p.facing = -1;
+    game.camera = Math.max(0, game.camera - speed);
+  }
+
+  if (game.keys.right) {
+    p.facing = 1;
+    game.camera += speed;
+  }
+
+  if (p.velocityY === undefined) p.velocityY = 0;
+  if (p.onGround === undefined) p.onGround = true;
+
+  p.velocityY += 0.55;
+  p.y = (p.y || floor) + p.velocityY;
+
+  if (p.y >= floor) {
+    p.y = floor;
+    p.velocityY = 0;
+    p.onGround = true;
+  } else {
+    p.onGround = false;
+  }
+
+  updateCharacterAnimation(p);
+}
+
+/* Nhảy */
+function characterJump() {
+  const p = game.player;
+  if (!p || !game.playing || game.paused) return;
+  if (!p.onGround || p.jumpCooldown > 0) return;
+
+  p.velocityY = -(p.jumpPower || 10);
+  p.onGround = false;
+  p.jumpCooldown = 12;
+}
+
+/* Né tránh */
+function characterDodge() {
+  const p = game.player;
+  if (!p || !game.playing || game.paused) return;
+  if (p.dodgeCooldown > 0) return;
+
+  p.invincible = 18;
+  p.dodgeCooldown = 75;
+  game.camera += (p.facing || 1) * 45;
+  p.animation = "dodge";
+}
+
+/* Vẽ nhân vật theo nghề nghiệp */
+function drawDetailedCharacter() {
+  const p = game.player;
+  if (!p) return;
+
+  const x = W * 0.35;
+  const y = p.y || ground - 48;
+  const data = CHARACTER_SYSTEM.classData[p.classId];
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(p.facing || 1, 1);
+
+  const t = p.animationTime || 0;
+  const running = p.animation === "run";
+  const bob = running ? Math.sin(t * 0.15) * 3 : 0;
+
+  /* Bóng */
+  ctx.fillStyle = "#111b22";
+  ctx.beginPath();
+  ctx.ellipse(0, 48, 17, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* Chân */
+  ctx.fillStyle = "#30394c";
+  ctx.fillRect(-10, 30 + bob, 8, 15);
+  ctx.fillRect(3, 30 - bob, 8, 15);
+
+  /* Thân áo */
+  ctx.fillStyle = data.color;
+  ctx.fillRect(-12, 5 + bob, 24, 28);
+
+  /* Áo giáp */
+  ctx.fillStyle = "#d4c89b";
+  ctx.fillRect(-13, 8 + bob, 4, 20);
+  ctx.fillRect(9, 8 + bob, 4, 20);
+
+  /* Đầu */
+  ctx.fillStyle = "#e9b98e";
+  ctx.fillRect(-10, -15 + bob, 20, 20);
+
+  /* Tóc */
+  ctx.fillStyle = p.classId === "mage" ? "#38264e" : "#252538";
+  ctx.fillRect(-11, -19 + bob, 22, 7);
+  ctx.fillRect(-12, -14 + bob, 5, 7);
+
+  /* Mắt */
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(-6, -8 + bob, 3, 3);
+  ctx.fillRect(4, -8 + bob, 3, 3);
+
+  /* Vũ khí theo nghề */
+  ctx.fillStyle = "#dce6f4";
+
+  if (p.classId === "warrior" || p.classId === "paladin") {
+    ctx.fillRect(15, 4 + bob, 4, 29);
+    ctx.fillStyle = "#a8b5c9";
+    ctx.fillRect(13, 2 + bob, 8, 5);
+  } else if (p.classId === "archer") {
+    ctx.strokeStyle = "#d7bb75";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(18, 16 + bob, 12, -1.2, 1.2);
+    ctx.stroke();
+  } else if (p.classId === "mage" || p.classId === "summoner") {
+    ctx.fillStyle = "#bba1ff";
+    ctx.fillRect(18, -7 + bob, 4, 43);
+    ctx.fillStyle = "#7fe9ff";
+    ctx.fillRect(15, -12 + bob, 10, 9);
+  } else {
+    ctx.fillStyle = "#bfc9d9";
+    ctx.fillRect(15, 10 + bob, 3, 22);
+    ctx.fillRect(21, 10 + bob, 3, 22);
+  }
+
+  /* Hiệu ứng né tránh */
+  if (p.invincible > 0) {
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = "#8deaff";
+    ctx.fillRect(-17, -22, 40, 72);
+  }
+
+  ctx.restore();
+}
+
+/* Nối vật lý và hoạt ảnh vào vòng lặp */
+const previousUpdateWorld = updateWorld;
+
+updateWorld = function() {
+  updateCharacterPhysics();
+  previousUpdateWorld();
+};
+
+/* Nối phím nhảy */
+document.querySelector('[data-action="jump"]')
+  .addEventListener("pointerdown", characterJump);
+
+/* Nối né tránh */
+document.querySelector('[data-action="dodge"]')
+  .addEventListener("pointerdown", characterDodge);
+
+/* Nâng cấp nghề nghiệp khi lên cấp */
+const previousCheckLevelUp = checkLevelUp;
+
+checkLevelUp = function() {
+  previousCheckLevelUp();
+  if (game.player) {
+    CHARACTER_SYSTEM.applyClass(
+      game.player,
+      game.player.classId
+    );
+    updateHUD();
+  }
+};
+
+/* Lưu thông tin nghề nghiệp */
+const previousSaveGame = saveGame;
+
+saveGame = function() {
+  if (!game.player) return;
+  previousSaveGame();
+};
+
+/* Đăng ký hệ thống nhân vật */
+console.log("Go to Wonderland: Character System loaded.");
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 3/10 - CHIẾN ĐẤU, VŨ KHÍ VÀ KỸ NĂNG
+   ===================================================== */
+
+const COMBAT_SYSTEM = (() => {
+  const elements = {
+    fire: { name:"Lửa", color:"#ff7043", strong:"nature", weak:"ice" },
+    ice: { name:"Băng", color:"#80dfff", strong:"fire", weak:"lightning" },
+    lightning: { name:"Sét", color:"#ffe66d", strong:"ice", weak:"nature" },
+    nature: { name:"Thiên nhiên", color:"#7bd66b", strong:"lightning", weak:"fire" },
+    light: { name:"Ánh sáng", color:"#fff0a1", strong:"dark", weak:"dark" },
+    dark: { name:"Bóng tối", color:"#ad82e8", strong:"light", weak:"light" }
+  };
+
+  const weapons = {
+    shortSword: {
+      name:"Kiếm ngắn", type:"melee", damage:15, range:75,
+      speed:1, element:null, skill:"Chém liên hoàn"
+    },
+    scythe: {
+      name:"Lưỡi hái", type:"melee", damage:24, range:100,
+      speed:.75, element:"dark", skill:"Lốc xoáy tử thần"
+    },
+    sickle: {
+      name:"Liềm", type:"melee", damage:18, range:90,
+      speed:1.1, element:null, skill:"Liềm bóng ma"
+    },
+    hammer: {
+      name:"Búa chiến", type:"melee", damage:30, range:95,
+      speed:.65, element:null, skill:"Chấn động mặt đất"
+    },
+    katana: {
+      name:"Katana", type:"melee", damage:21, range:115,
+      speed:1.15, element:null, skill:"Ảnh trảm"
+    },
+    greatsword: {
+      name:"Đại kiếm", type:"melee", damage:35, range:125,
+      speed:.6, element:null, skill:"Đại kiếm phá không"
+    },
+    staff: {
+      name:"Trượng phép", type:"magic", damage:23, range:300,
+      speed:.85, element:"fire", skill:"Cầu lửa"
+    },
+    bow: {
+      name:"Cung", type:"ranged", damage:18, range:320,
+      speed:1, element:null, skill:"Mưa tên"
+    },
+    darts: {
+      name:"Phi tiêu", type:"ranged", damage:12, range:230,
+      speed:1.5, element:null, skill:"Bão phi tiêu"
+    },
+    poison: {
+      name:"Vũ khí độc", type:"ranged", damage:15, range:250,
+      speed:.9, element:"nature", skill:"Vùng độc"
+    },
+    crossbow: {
+      name:"Nỏ", type:"ranged", damage:25, range:350,
+      speed:.75, element:null, skill:"Loạt nỏ"
+    },
+    longbow: {
+      name:"Trường cung", type:"ranged", damage:30, range:400,
+      speed:.65, element:null, skill:"Mũi tên xuyên phá"
+    }
+  };
+
+  const skillTypes = {
+    attack:{name:"Tấn công",color:"#e65b5b"},
+    movement:{name:"Di chuyển",color:"#62c9ec"},
+    defense:{name:"Phòng thủ",color:"#7ed18b"},
+    ultimate:{name:"Tuyệt kỹ",color:"#e6bd55"}
+  };
+
+  const skills = {
+    warrior:[
+      {id:"slash",name:"Chém liên hoàn",type:"attack",damage:45,cooldown:4},
+      {id:"charge",name:"Xung phong",type:"movement",damage:25,cooldown:7},
+      {id:"guard",name:"Phòng thủ thép",type:"defense",damage:0,cooldown:12},
+      {id:"bladeStorm",name:"Bão kiếm",type:"ultimate",damage:100,cooldown:25}
+    ],
+    mage:[
+      {id:"fireball",name:"Cầu lửa",type:"attack",damage:55,cooldown:5},
+      {id:"blink",name:"Dịch chuyển",type:"movement",damage:0,cooldown:8},
+      {id:"iceShield",name:"Khiên băng",type:"defense",damage:0,cooldown:14},
+      {id:"meteor",name:"Thiên thạch",type:"ultimate",damage:130,cooldown:30}
+    ],
+    archer:[
+      {id:"multiShot",name:"Bắn liên hoàn",type:"attack",damage:50,cooldown:5},
+      {id:"backstep",name:"Lùi nhanh",type:"movement",damage:0,cooldown:7},
+      {id:"eagleEye",name:"Mắt đại bàng",type:"defense",damage:0,cooldown:15},
+      {id:"arrowRain",name:"Mưa tên",type:"ultimate",damage:115,cooldown:27}
+    ],
+    assassin:[
+      {id:"shadowCut",name:"Ảnh trảm",type:"attack",damage:60,cooldown:4},
+      {id:"shadowStep",name:"Bước bóng tối",type:"movement",damage:0,cooldown:6},
+      {id:"vanish",name:"Ẩn thân",type:"defense",damage:0,cooldown:16},
+      {id:"deathDance",name:"Vũ điệu tử thần",type:"ultimate",damage:125,cooldown:28}
+    ],
+    paladin:[
+      {id:"holySlash",name:"Thánh kiếm",type:"attack",damage:45,cooldown:5},
+      {id:"holyCharge",name:"Thánh xung",type:"movement",damage:30,cooldown:8},
+      {id:"holyShield",name:"Khiên thánh",type:"defense",damage:0,cooldown:14},
+      {id:"judgement",name:"Phán quyết",type:"ultimate",damage:110,cooldown:30}
+    ],
+    summoner:[
+      {id:"spiritBolt",name:"Đạn linh hồn",type:"attack",damage:40,cooldown:5},
+      {id:"spiritDash",name:"Lướt linh hồn",type:"movement",damage:0,cooldown:8},
+      {id:"spiritGuard",name:"Hộ vệ linh hồn",type:"defense",damage:0,cooldown:14},
+      {id:"ancientSpirit",name:"Linh hồn cổ đại",type:"ultimate",damage:120,cooldown:30}
+    ]
+  };
+
+  function elementMultiplier(attackElement,targetElement) {
+    if (!attackElement || !targetElement) return 1;
+    if (elements[attackElement]?.strong === targetElement) return 1.5;
+    if (elements[attackElement]?.weak === targetElement) return .7;
+    return 1;
+  }
+
+  function calculateDamage(player,weapon,target,skillMultiplier=1) {
+    const base = (player.attack || 10) + (weapon?.damage || 0);
+    const multiplier = elementMultiplier(
+      weapon?.element,
+      target?.element
+    );
+    const defense = target?.defense || 0;
+    return Math.max(1,Math.floor(
+      base * skillMultiplier * multiplier - defense
+    ));
+  }
+
+  function createWeapon(id) {
+    const w = weapons[id];
+    if (!w) return null;
+    return {
+      id,
+      name:w.name,
+      type:w.type,
+      damage:w.damage,
+      range:w.range,
+      speed:w.speed,
+      element:w.element,
+      level:1,
+      rarity:"Common",
+      durability:100
+    };
+  }
+
+  return {
+    elements, weapons, skillTypes, skills,
+    elementMultiplier, calculateDamage, createWeapon
+  };
+})();
+
+/* ===== VŨ KHÍ KHỞI ĐẦU ===== */
+if (game.player) {
+  game.player.weapon = COMBAT_SYSTEM.createWeapon("shortSword");
+  game.player.unlockedWeapons = ["shortSword"];
+  game.player.skillRanks = {};
+  game.player.skillCooldowns = {};
+}
+
+/* ===== HỆ THỐNG ĐÁNH THƯỜNG ===== */
+function combatBasicAttack() {
+  const p = game.player;
+  if (!p || !game.playing || game.paused) return;
+
+  const weapon = p.weapon ||
+    COMBAT_SYSTEM.createWeapon("shortSword");
+
+  const target = game.enemies.find(e => {
+    const distance = Math.abs(
+      e.x - game.camera - W * .35
+    );
+    return distance <= weapon.range;
+  });
+
+  if (!target) {
+    notify("Không có mục tiêu trong tầm đánh.");
+    return;
+  }
+
+  const damage = COMBAT_SYSTEM.calculateDamage(
+    p,weapon,target
+  );
+
+  target.hp -= damage;
+  target.lastHit = game.frame;
+  target.flash = 8;
+
+  spawnCombatEffect(
+    target.x - game.camera,
+    target.y - 15,
+    damage,
+    weapon.element
+  );
+
+  if (target.hp <= 0) defeatEnemy(target);
+}
+
+/* ===== HIỆU ỨNG ĐÒN ĐÁNH ===== */
+function spawnCombatEffect(x,y,damage,element) {
+  if (!game.combatEffects) game.combatEffects = [];
+
+  game.combatEffects.push({
+    x,y,damage,
+    color:element
+      ? COMBAT_SYSTEM.elements[element].color
+      : "#ffe28a",
+    life:35,
+    vx:(Math.random()-.5)*2,
+    vy:-2
+  });
+}
+
+function drawCombatEffects() {
+  if (!game.combatEffects) return;
+
+  game.combatEffects.forEach(e=>{
+    ctx.globalAlpha=Math.max(0,e.life/35);
+    ctx.fillStyle=e.color;
+    ctx.font="bold 16px Arial";
+    ctx.fillText("-"+e.damage,e.x,e.y);
+    e.x+=e.vx;
+    e.y+=e.vy;
+    e.life--;
+  });
+
+  ctx.globalAlpha=1;
+  game.combatEffects=game.combatEffects.filter(e=>e.life>0);
+}
+
+/* ===== HẠ QUÁI VÀ NHẬN THƯỞNG ===== */
+function defeatEnemy(enemy) {
+  const index=game.enemies.indexOf(enemy);
+  if(index<0)return;
+
+  game.enemies.splice(index,1);
+
+  const p=game.player;
+  p.xp+=20;
+  p.gold+=10;
+
+  if(Math.random()<.25){
+    p.inventory.push({
+      id:"forest_material",
+      name:"Nguyên liệu rừng",
+      icon:"🍃",
+      quantity:1
+    });
+    notify("Nhận được nguyên liệu rừng!");
+  }else{
+    notify("Đã đánh bại quái vật!");
+  }
+
+  checkLevelUp();
+  saveGame();
+}
+
+/* ===== SỬ DỤNG KỸ NĂNG ===== */
+function useClassSkill(skillIndex) {
+  const p=game.player;
+  if(!p||!game.playing||game.paused)return;
+
+  const classSkills=COMBAT_SYSTEM.skills[p.classId];
+  const skill=classSkills?.[skillIndex];
+  if(!skill)return;
+
+  if(!p.skillCooldowns)p.skillCooldowns={};
+
+  const remaining=p.skillCooldowns[skill.id]||0;
+  if(remaining>0){
+    notify("Kỹ năng đang hồi chiêu!");
+    return;
+  }
+
+  p.skillCooldowns[skill.id]=skill.cooldown*60;
+
+  if(skill.type==="defense"){
+    p.invincible=90;
+    if(skill.id==="holyShield"){
+      p.hp=Math.min(p.maxHp,p.hp+25);
+    }
+  }
+
+  if(skill.type==="movement"){
+    if(skill.id==="blink"||skill.id==="shadowStep"){
+      game.camera+=p.facing*150;
+    }else{
+      game.camera+=p.facing*70;
+    }
+  }
+
+  if(skill.damage>0){
+    const range=skill.id==="meteor"?450:300;
+
+    game.enemies.slice().forEach(e=>{
+      const distance=Math.abs(
+        e.x-game.camera-W*.35
+      );
+      if(distance<=range){
+        const damage=Math.floor(
+          skill.damage+
+          (p.attack||0)*.5
+        );
+        e.hp-=damage;
+        spawnCombatEffect(
+          e.x-game.camera,e.y-15,damage,null
+        );
+        if(e.hp<=0)defeatEnemy(e);
+      }
+    });
+  }
+
+  notify("Kỹ năng: "+skill.name);
+  saveGame();
+}
+
+/* ===== NÂNG CẤP VŨ KHÍ ===== */
+function upgradeWeapon() {
+  const p=game.player;
+  if(!p||!p.weapon)return false;
+
+  const cost=p.weapon.level*100;
+  if(p.gold<cost){
+    notify("Không đủ vàng để nâng cấp!");
+    return false;
+  }
+
+  p.gold-=cost;
+  p.weapon.level++;
+  p.weapon.damage+=5;
+
+  notify("Nâng cấp vũ khí thành công!");
+  saveGame();
+  return true;
+}
+
+/* ===== GẮN VŨ KHÍ ===== */
+function equipWeapon(id) {
+  const p=game.player;
+  if(!p)return false;
+
+  const weapon=COMBAT_SYSTEM.createWeapon(id);
+  if(!weapon)return false;
+
+  p.weapon=weapon;
+
+  if(!p.unlockedWeapons)p.unlockedWeapons=[];
+  if(!p.unlockedWeapons.includes(id)){
+    p.unlockedWeapons.push(id);
+  }
+
+  notify("Đã trang bị: "+weapon.name);
+  saveGame();
+  return true;
+}
+
+/* ===== NỐI VÀO NÚT ĐÁNH ===== */
+const attackButton=document.querySelector(
+  '[data-action="attack"]'
+);
+
+attackButton.removeEventListener("pointerdown",()=>{});
+attackButton.addEventListener(
+  "pointerdown",
+  e=>{
+    e.preventDefault();
+    combatBasicAttack();
+  }
+);
+
+/* ===== NỐI VÀO NÚT KỸ NĂNG ===== */
+const skillButton=document.querySelector(
+  '[data-action="skill"]'
+);
+
+skillButton.addEventListener(
+  "pointerdown",
+  e=>{
+    e.preventDefault();
+    useClassSkill(0);
+  }
+);
+
+/* ===== NỐI HIỆU ỨNG VÀO VÒNG LẶP ===== */
+const oldDrawWorld=drawWorld;
+
+drawWorld=function(){
+  oldDrawWorld();
+  drawCombatEffects();
+};
+
+/* ===== GIẢM THỜI GIAN HỒI CHIÊU ===== */
+const oldUpdateWorld=updateWorld;
+
+updateWorld=function(){
+  oldUpdateWorld();
+
+  const p=game.player;
+  if(!p?.skillCooldowns)return;
+
+  Object.keys(p.skillCooldowns).forEach(id=>{
+    if(p.skillCooldowns[id]>0){
+      p.skillCooldowns[id]--;
+    }
+  });
+};
+
+console.log("Combat System loaded.");
+
+// =====================================================
+// GO TO WONDERLAND V1.0
+// PHẦN 4/10 - QUÁI VẬT, AI VÀ BOSS
+// =====================================================
+
+const MONSTER_SYSTEM = (() => {
+  const regions = {
+    0: {
+      name:"Rừng Cổ Đại",
+      monsters:[
+        {id:"slime",name:"Slime Rừng",hp:45,damage:7,defense:1,xp:20,gold:8,type:"melee",speed:1.1,element:"nature"},
+        {id:"wolf",name:"Sói Đêm",hp:65,damage:12,defense:2,xp:30,gold:12,type:"charger",speed:2,element:"nature"},
+        {id:"mushroom",name:"Nấm Độc",hp:55,damage:9,defense:1,xp:25,gold:10,type:"ranged",speed:.5,element:"nature"},
+        {id:"plant",name:"Cây Ăn Thịt",hp:90,damage:15,defense:5,xp:45,gold:20,type:"guard",speed:0,element:"nature"},
+        {id:"guardian",name:"Hộ Vệ Rừng",hp:180,damage:20,defense:8,xp:100,gold:50,type:"elite",speed:1,element:"nature"}
+      ]
+    },
+    1: {
+      name:"Hầm Ngục Bị Lãng Quên",
+      monsters:[
+        {id:"skeleton",name:"Chiến Binh Xương",hp:75,damage:13,defense:4,xp:35,gold:15,type:"melee",speed:1,element:"dark"},
+        {id:"bat",name:"Dơi Hang",hp:40,damage:10,defense:1,xp:22,gold:9,type:"charger",speed:2.5,element:"dark"},
+        {id:"ghost",name:"Hồn Ma Ngục Tối",hp:60,damage:14,defense:2,xp:40,gold:18,type:"ranged",speed:.7,element:"dark"},
+        {id:"knight",name:"Kỵ Sĩ Tử Thần",hp:140,damage:22,defense:10,xp:75,gold:35,type:"guard",speed:.8,element:"dark"},
+        {id:"keeper",name:"Người Canh Ngục",hp:250,damage:25,defense:12,xp:140,gold:65,type:"elite",speed:1,element:"dark"}
+      ]
+    },
+    2: {
+      name:"Núi Tuyết Vĩnh Cửu",
+      monsters:[
+        {id:"iceWolf",name:"Sói Băng",hp:85,damage:16,defense:4,xp:45,gold:18,type:"charger",speed:2,element:"ice"},
+        {id:"snowman",name:"Người Tuyết",hp:70,damage:12,defense:3,xp:35,gold:14,type:"ranged",speed:.6,element:"ice"},
+        {id:"spider",name:"Nhện Tuyết",hp:65,damage:14,defense:3,xp:38,gold:16,type:"melee",speed:1.5,element:"ice"},
+        {id:"golem",name:"Người Đá Băng",hp:190,damage:24,defense:12,xp:90,gold:40,type:"guard",speed:.5,element:"ice"},
+        {id:"dragon",name:"Rồng Băng Con",hp:280,damage:28,defense:14,xp:160,gold:75,type:"elite",speed:1.3,element:"ice"}
+      ]
+    },
+    3: {
+      name:"Vùng Đất Lửa",
+      monsters:[
+        {id:"demon",name:"Quỷ Lửa",hp:100,damage:20,defense:5,xp:55,gold:22,type:"melee",speed:1.2,element:"fire"},
+        {id:"lavaSlime",name:"Slime Dung Nham",hp:90,damage:18,defense:7,xp:50,gold:20,type:"charger",speed:1.5,element:"fire"},
+        {id:"golemFire",name:"Người Đá Nóng Chảy",hp:220,damage:26,defense:14,xp:110,gold:48,type:"guard",speed:.6,element:"fire"},
+        {id:"scorpion",name:"Bọ Cạp Lửa",hp:120,damage:22,defense:6,xp:65,gold:28,type:"charger",speed:1.8,element:"fire"},
+        {id:"lavaKnight",name:"Chiến Binh Dung Nham",hp:320,damage:32,defense:16,xp:180,gold:85,type:"elite",speed:1,element:"fire"}
+      ]
+    },
+    4: {
+      name:"Quần Đảo Trên Mây",
+      monsters:[
+        {id:"cloudBird",name:"Chim Săn Mây",hp:90,damage:18,defense:3,xp:50,gold:20,type:"charger",speed:2.2,element:"light"},
+        {id:"windSpirit",name:"Tinh Linh Gió",hp:75,damage:20,defense:3,xp:55,gold:22,type:"ranged",speed:1,element:"light"},
+        {id:"jellyfish",name:"Sứa Bay",hp:110,damage:19,defense:5,xp:65,gold:28,type:"ranged",speed:1,element:"light"},
+        {id:"fallenAngel",name:"Thiên Thần Sa Ngã",hp:260,damage:30,defense:12,xp:145,gold:70,type:"guard",speed:1.2,element:"dark"},
+        {id:"islandGuardian",name:"Hộ Vệ Đảo Mây",hp:350,damage:35,defense:18,xp:200,gold:95,type:"elite",speed:.9,element:"light"}
+      ]
+    },
+    5: {
+      name:"Vương Quốc Bóng Tối",
+      monsters:[
+        {id:"shadowGhost",name:"Ma Bóng Tối",hp:120,damage:24,defense:6,xp:70,gold:30,type:"ranged",speed:1,element:"dark"},
+        {id:"darkDemon",name:"Ác Quỷ Hắc Ám",hp:180,damage:28,defense:9,xp:100,gold:45,type:"charger",speed:1.7,element:"dark"},
+        {id:"darkKnight",name:"Kỵ Sĩ Bóng Đêm",hp:260,damage:32,defense:16,xp:140,gold:65,type:"guard",speed:.8,element:"dark"},
+        {id:"soulHunter",name:"Thợ Săn Linh Hồn",hp:200,damage:30,defense:8,xp:125,gold:58,type:"melee",speed:1.5,element:"dark"},
+        {id:"voidMonster",name:"Quái Vật Hư Vô",hp:400,damage:38,defense:20,xp:250,gold:120,type:"elite",speed:1.1,element:"dark"}
+      ]
+    }
+  };
+
+  const hellBosses = [
+    {name:"Cổ Thụ Hắc Ám",hp:1500,damage:35,element:"nature"},
+    {name:"Tử Thần Ngục Tối",hp:1900,damage:42,element:"dark"},
+    {name:"Băng Long Hủy Diệt",hp:2300,damage:48,element:"ice"},
+    {name:"Ma Thần Dung Nham",hp:2700,damage:55,element:"fire"},
+    {name:"Thiên Thần Sa Ngã",hp:3100,damage:60,element:"light"},
+    {name:"Hư Vô Chi Vương",hp:4000,damage:70,element:"dark"}
+  ];
+
+  function createMonster(region,difficulty=1) {
+    const list=regions[region] || regions[0];
+    const base=list.monsters[
+      Math.floor(Math.random()*list.monsters.length)
+    ];
+
+    const scale=1+(difficulty-1)*.65;
+
+    return {
+      ...base,
+      hp:Math.floor(base.hp*scale),
+      maxHp:Math.floor(base.hp*scale),
+      damage:Math.floor(base.damage*scale),
+      defense:Math.floor(base.defense*scale),
+      x:W+game.camera+100+Math.random()*300,
+      y:ground-25,
+      attackCooldown:0,
+      state:"idle",
+      isBoss:false,
+      flash:0
+    };
+  }
+
+  function createBoss(region,hell=false) {
+    const base=hellBosses[region] || hellBosses[0];
+    const hp=base.hp*(hell?1.8:1);
+
+    return {
+      id:"boss_"+region,
+      name:hell?base.name:("Thủ Lĩnh "+regions[region].name),
+      hp,maxHp:hp,
+      damage:base.damage*(hell?1.4:1),
+      defense:20,
+      element:base.element,
+      x:W+game.camera+180,
+      y:ground-65,
+      width:100,
+      height:90,
+      isBoss:true,
+      hellBoss:hell,
+      phase:1,
+      attackCooldown:120,
+      state:"idle",
+      flash:0
+    };
+  }
+
+  return {regions,hellBosses,createMonster,createBoss};
+})();
+
+/* ===== SINH QUÁI VẬT ===== */
+function spawnRegionMonster(region,difficulty=1){
+  const monster=MONSTER_SYSTEM.createMonster(region,difficulty);
+  game.enemies.push(monster);
+  return monster;
+}
+
+/* ===== AI QUÁI VẬT ===== */
+function updateMonsterAI(enemy){
+  const playerX=W*.35;
+  const enemyX=enemy.x-game.camera;
+  const distance=playerX-enemyX;
+
+  if(enemy.attackCooldown>0)enemy.attackCooldown--;
+
+  if(enemy.type==="guard"){
+    enemy.state="guard";
+    if(Math.abs(distance)<130&&enemy.attackCooldown===0){
+      damagePlayer(enemy.damage);
+      enemy.attackCooldown=100;
+    }
+  }
+  else if(enemy.type==="charger"){
+    enemy.state="charge";
+    if(Math.abs(distance)>45){
+      enemy.x+=Math.sign(distance)*enemy.speed;
+    }else if(enemy.attackCooldown===0){
+      damagePlayer(enemy.damage);
+      enemy.attackCooldown=90;
+    }
+  }
+  else if(enemy.type==="ranged"){
+    if(Math.abs(distance)<130){
+      enemy.state="retreat";
+      enemy.x-=Math.sign(distance)*enemy.speed;
+    }else{
+      enemy.state="shoot";
+      if(enemy.attackCooldown===0){
+        if(Math.abs(distance)<320)damagePlayer(enemy.damage);
+        enemy.attackCooldown=130;
+      }
+    }
+  }
+  else {
+    if(Math.abs(distance)>42){
+      enemy.state="chase";
+      enemy.x+=Math.sign(distance)*enemy.speed;
+    }else if(enemy.attackCooldown===0){
+      damagePlayer(enemy.damage);
+      enemy.attackCooldown=100;
+    }
+  }
+
+  if(enemy.flash>0)enemy.flash--;
+}
+
+/* ===== AI BOSS 3 GIAI ĐOẠN ===== */
+function updateBossAI(boss){
+  const ratio=boss.hp/boss.maxHp;
+
+  if(ratio<=.25)boss.phase=3;
+  else if(ratio<=.60)boss.phase=2;
+  else boss.phase=1;
+
+  if(boss.attackCooldown>0)boss.attackCooldown--;
+
+  if(boss.attackCooldown===0){
+    if(boss.phase===1){
+      damagePlayer(boss.damage);
+      boss.attackCooldown=110;
+      boss.state="normal_attack";
+    }else if(boss.phase===2){
+      damagePlayer(boss.damage*1.25);
+      boss.attackCooldown=85;
+      boss.state="heavy_attack";
+    }else{
+      damagePlayer(boss.damage*1.5);
+      boss.attackCooldown=60;
+      boss.state="ultimate_attack";
+    }
+  }
+}
+
+/* ===== NHẬN SÁT THƯƠNG ===== */
+function damagePlayer(amount){
+  const p=game.player;
+  if(!p||p.invincible>0)return;
+
+  const actual=Math.max(
+    1,Math.floor(amount-(p.defense||0)*.5)
+  );
+
+  p.hp=Math.max(0,p.hp-actual);
+  p.invincible=35;
+  updateHUD();
+
+  if(p.hp<=0){
+    game.paused=true;
+    notify("Bạn đã bị đánh bại! Màn chơi sẽ được khởi động lại.");
+    setTimeout(()=>{
+      p.hp=p.maxHp;
+      game.paused=false;
+      game.camera=0;
+      saveGame();
+    },1500);
+  }
+}
+
+/* ===== VẼ THANH MÁU QUÁI ===== */
+function drawMonsterHealth(enemy){
+  const x=enemy.x-game.camera;
+  const y=enemy.y-35;
+  const width=enemy.isBoss?140:45;
+
+  ctx.fillStyle="#241d29";
+  ctx.fillRect(x-width/2,y,width,6);
+
+  ctx.fillStyle=enemy.isBoss?"#e94d65":"#74d16a";
+  ctx.fillRect(
+    x-width/2,y,
+    width*Math.max(0,enemy.hp/enemy.maxHp),6
+  );
+
+  if(enemy.isBoss){
+    ctx.fillStyle="#fff1c0";
+    ctx.font="bold 13px Arial";
+    ctx.textAlign="center";
+    ctx.fillText(enemy.name,x,y-10);
+    ctx.textAlign="left";
+  }
+}
+
+/* ===== VẼ QUÁI VẬT PIXEL CƠ BẢN ===== */
+function drawMonster(enemy){
+  const x=enemy.x-game.camera;
+  const y=enemy.y;
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  const color=enemy.isBoss?"#713a8e":
+    enemy.element==="fire"?"#d45a36":
+    enemy.element==="ice"?"#76c6e6":
+    enemy.element==="dark"?"#55416f":
+    enemy.element==="light"?"#c5b96d":"#65a35c";
+
+  const scale=enemy.isBoss?3:1;
+
+  ctx.scale(scale,scale);
+  ctx.fillStyle=color;
+  ctx.fillRect(-14,-25,28,25);
+
+  ctx.fillStyle="#29243a";
+  ctx.fillRect(-9,-20,5,5);
+  ctx.fillRect(4,-20,5,5);
+
+  ctx.fillStyle="#f8e3a0";
+  ctx.fillRect(-7,-8,14,3);
+
+  if(enemy.isBoss){
+    ctx.fillStyle="#b9a0d9";
+    ctx.fillRect(-23,-30,8,15);
+    ctx.fillRect(15,-30,8,15);
+  }
+
+  ctx.restore();
+  drawMonsterHealth(enemy);
+}
+
+/* ===== NỐI AI VÀO VÒNG LẶP ===== */
+const previousMonsterUpdate=updateWorld;
+
+updateWorld=function(){
+  previousMonsterUpdate();
+
+  game.enemies.forEach(enemy=>{
+    if(enemy.isBoss)updateBossAI(enemy);
+    else updateMonsterAI(enemy);
+  });
+};
+
+/* ===== NỐI VẼ QUÁI VẬT ===== */
+const previousWorldDraw=drawWorld;
+
+drawWorld=function(){
+  drawSky();
+  drawPlayer();
+
+  game.enemies.forEach(enemy=>{
+    drawMonster(enemy);
+  });
+
+  drawCombatEffects();
+};
+
+/* ===== BOSS VÀ THƯỞNG ===== */
+function beginBossFight(region,hell=false){
+  if(!game.playing)return;
+
+  game.enemies=[];
+  const boss=MONSTER_SYSTEM.createBoss(region,hell);
+  game.enemies.push(boss);
+
+  notify("BOSS XUẤT HIỆN: "+boss.name);
+}
+
+function defeatBoss(boss){
+  const p=game.player;
+  if(!p)return;
+
+  p.xp+=500;
+  p.gold+=300;
+
+  if(boss.hellBoss){
+    p.diamonds+=5;
+    p.inventory.push({
+      id:"hell_material",
+      name:"Nguyên liệu địa ngục",
+      icon:"💎",
+      quantity:1
+    });
+  }
+
+  checkLevelUp();
+  saveGame();
+  notify("Đã đánh bại Boss!");
+}
+
+console.log("Monster and Boss System loaded.");
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 5/10: THẾ GIỚI - 72 MÀN - 4 ĐỘ KHÓ
+===================================================== */
+
+const WORLD_SYSTEM = (() => {
+
+  const difficulties = [
+    { id: 0, name: "Bình thường", multiplier: 1, color: "#78d66b" },
+    { id: 1, name: "Khó", multiplier: 1.5, color: "#e5c34e" },
+    { id: 2, name: "Ác mộng", multiplier: 2.2, color: "#e87945" },
+    { id: 3, name: "Địa ngục", multiplier: 3.2, color: "#e64b63" }
+  ];
+
+  const regionData = [
+    {
+      name: "Rừng Cổ Đại",
+      icon: "🌲",
+      boss: "Cổ Thụ Hắc Ám",
+      bossIcon: "🌳",
+      sky: "#172d38",
+      ground: "#315b3d",
+      accent: "#79c66a",
+      enemies: ["Slime Rừng", "Sói Đêm", "Nấm Độc", "Cây Ăn Thịt", "Hộ Vệ Rừng"]
+    },
+    {
+      name: "Hầm Ngục Bị Lãng Quên",
+      icon: "🏰",
+      boss: "Tử Thần Ngục Tối",
+      bossIcon: "💀",
+      sky: "#252139",
+      ground: "#51445d",
+      accent: "#a68bd0",
+      enemies: ["Chiến Binh Xương", "Dơi Đen", "Hồn Ma", "Kỵ Sĩ Tử Thần", "Hộ Vệ Ngục"]
+    },
+    {
+      name: "Núi Tuyết Vĩnh Cửu",
+      icon: "❄️",
+      boss: "Băng Long Hủy Diệt",
+      bossIcon: "🐉",
+      sky: "#253c59",
+      ground: "#a7c9dd",
+      accent: "#8ce8ff",
+      enemies: ["Sói Băng", "Người Tuyết", "Nhện Tuyết", "Người Đá Băng", "Rồng Băng Con"]
+    },
+    {
+      name: "Vùng Đất Lửa",
+      icon: "🔥",
+      boss: "Ma Thần Dung Nham",
+      bossIcon: "👹",
+      sky: "#451d20",
+      ground: "#70352b",
+      accent: "#ff8651",
+      enemies: ["Quỷ Lửa", "Slime Dung Nham", "Người Đá Lửa", "Bọ Cạp Lửa", "Chiến Binh Dung Nham"]
+    },
+    {
+      name: "Quần Đảo Trên Mây",
+      icon: "☁️",
+      boss: "Thiên Thần Sa Ngã",
+      bossIcon: "👼",
+      sky: "#294c72",
+      ground: "#7897ad",
+      accent: "#f5e6a1",
+      enemies: ["Chim Săn Mây", "Tinh Linh Gió", "Sứa Bay", "Thiên Thần Sa Ngã", "Hộ Vệ Đảo"]
+    },
+    {
+      name: "Vương Quốc Bóng Tối",
+      icon: "🌑",
+      boss: "Hư Vô Chi Vương",
+      bossIcon: "👑",
+      sky: "#171322",
+      ground: "#34263f",
+      accent: "#b58aff",
+      enemies: ["Hồn Ma Bóng Tối", "Quỷ Đen", "Kỵ Sĩ Hắc Ám", "Thợ Săn Linh Hồn", "Quái Vật Hư Vô"]
+    }
+  ];
+
+  const stageNames = [
+    "Con Đường Khởi Đầu",
+    "Khu Vực Bí Ẩn",
+    "Dấu Vết Lạ",
+    "Thử Thách Đầu Tiên",
+    "Vùng Đất Nguy Hiểm",
+    "Hang Ổ Quái Vật",
+    "Con Đường Bí Mật",
+    "Khu Vực Cấm",
+    "Thử Thách Sinh Tồn",
+    "Cánh Cổng Cổ",
+    "Vùng Đất Cuối",
+    "Đấu Trường Trùm"
+  ];
+
+  const stages = [];
+
+  regionData.forEach((region, regionIndex) => {
+    for (let i = 0; i < 12; i++) {
+      stages.push({
+        id: regionIndex * 12 + i + 1,
+        region: regionIndex,
+        number: i + 1,
+        name: stageNames[i],
+        boss: i === 11,
+        bossName: i === 11 ? region.boss : null,
+        enemies: region.enemies,
+        difficulty: 0,
+        secret: i === 6 || i === 8 || i === 10,
+        weather: ["Bình thường", "Sương mù", "Mưa", "Gió mạnh"][i % 4]
+      });
+    }
+  });
+
+  function initialize() {
+    if (!game.progress) game.progress = {};
+
+    const p = game.progress;
+
+    if (!Array.isArray(p.clearedStages)) p.clearedStages = [];
+    if (!Array.isArray(p.unlockedRegions)) p.unlockedRegions = [0];
+    if (!Array.isArray(p.unlockedDifficulties)) {
+      p.unlockedDifficulties = [0];
+    }
+
+    if (!p.stageDifficulty) p.stageDifficulty = {};
+    if (!p.secretsFound) p.secretsFound = [];
+
+    p.unlockedRegions.push(0);
+    p.unlockedRegions = [...new Set(p.unlockedRegions)];
+
+    saveProgress();
+  }
+
+  function saveProgress() {
+    if (typeof saveGame === "function") {
+      try {
+        saveGame();
+      } catch (error) {
+        console.warn("Không thể lưu tiến trình thế giới:", error);
+      }
+    }
+  }
+
+  function isRegionUnlocked(regionIndex) {
+    return game.progress.unlockedRegions.includes(regionIndex);
+  }
+
+  function isStageUnlocked(stageId) {
+    if (stageId === 1) return true;
+
+    const stage = stages.find(s => s.id === stageId);
+    if (!stage) return false;
+
+    if (!isRegionUnlocked(stage.region)) return false;
+
+    return game.progress.clearedStages.includes(stageId - 1);
+  }
+
+  function isDifficultyUnlocked(difficultyId) {
+    return game.progress.unlockedDifficulties.includes(difficultyId);
+  }
+
+  function clearStage(stageId, difficultyId) {
+    const key = stageId + "_" + difficultyId;
+
+    game.progress.stageDifficulty[key] = true;
+
+    if (!game.progress.clearedStages.includes(stageId)) {
+      game.progress.clearedStages.push(stageId);
+    }
+
+    // Mở độ khó tiếp theo sau khi hoàn thành màn trước.
+    if (
+      difficultyId < 3 &&
+      !game.progress.unlockedDifficulties.includes(difficultyId + 1)
+    ) {
+      game.progress.unlockedDifficulties.push(difficultyId + 1);
+    }
+
+    const stage = stages.find(s => s.id === stageId);
+
+    // Đánh bại trùm vùng cuối để mở vùng tiếp theo.
+    if (stage && stage.boss && stage.region < 5) {
+      const nextRegion = stage.region + 1;
+
+      if (!game.progress.unlockedRegions.includes(nextRegion)) {
+        game.progress.unlockedRegions.push(nextRegion);
+      }
+    }
+
+    saveProgress();
+    renderMap();
+  }
+
+  function getStageMultiplier(stageId, difficultyId) {
+    const stage = stages.find(s => s.id === stageId);
+    const difficulty = difficulties[difficultyId];
+
+    if (!stage || !difficulty) return 1;
+
+    return difficulty.multiplier *
+      (1 + stage.region * 0.12 + stage.number * 0.025);
+  }
+
+  function getStage(stageId) {
+    return stages.find(s => s.id === stageId);
+  }
+
+  function startStage(stageId, difficultyId = 0) {
+    const stage = getStage(stageId);
+
+    if (!stage) {
+      notify("Không tìm thấy màn chơi!");
+      return;
+    }
+
+    if (!isStageUnlocked(stageId)) {
+      notify("Bạn cần hoàn thành màn trước!");
+      return;
+    }
+
+    if (!isDifficultyUnlocked(difficultyId)) {
+      notify("Độ khó này chưa được mở!");
+      return;
+    }
+
+    game.currentStage = stageId;
+    game.currentRegion = stage.region;
+    game.currentDifficulty = difficultyId;
+    game.stageMultiplier = getStageMultiplier(stageId, difficultyId);
+
+    if (typeof startLevel === "function") {
+      startLevel();
+    }
+
+    // Thay đổi số lượng và sức mạnh quái theo độ khó.
+    if (Array.isArray(game.enemies)) {
+      game.enemies.forEach(enemy => {
+        enemy.hp = Math.round(
+          (enemy.hp || 30) * game.stageMultiplier
+        );
+        enemy.maxHp = enemy.hp;
+        enemy.damage = Math.round(
+          (enemy.damage || 5) * game.stageMultiplier
+        );
+      });
+    }
+
+    if (stage.boss && typeof beginBossFight === "function") {
+      beginBossFight(regionData[stage.region].boss);
+    }
+
+    notify(
+      stage.name + " - " + difficulties[difficultyId].name
+    );
+  }
+
+  function renderMap() {
+    let panel = document.getElementById("worldMapPanel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "worldMapPanel";
+      panel.style.cssText = `
+        position:fixed;
+        inset:0;
+        z-index:9999;
+        background:#101522;
+        color:white;
+        overflow-y:auto;
+        padding:16px;
+        font-family:Arial,sans-serif;
+      `;
+      document.body.appendChild(panel);
+    }
+
+    let html = `
+      <div style="max-width:850px;margin:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2>🌍 BẢN ĐỒ WONDERLAND</h2>
+          <button onclick="WORLD_SYSTEM.closeMap()"
+            style="padding:10px 15px">✕</button>
+        </div>
+        <p>6 vùng đất · 72 màn chơi · 4 cấp độ khó</p>
+    `;
+
+    regionData.forEach((region, regionIndex) => {
+      const unlocked = isRegionUnlocked(regionIndex);
+
+      html += `
+        <section style="
+          margin:18px 0;
+          padding:14px;
+          border:1px solid ${region.accent};
+          border-radius:12px;
+          background:${unlocked ? "#202a3b" : "#171b25"};
+          opacity:${unlocked ? "1" : ".5"};
+        ">
+          <h3>${region.icon} ${region.name}</h3>
+          <p>Trùm vùng: ${region.boss}</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+      `;
+
+      for (let i = 0; i < 12; i++) {
+        const stageId = regionIndex * 12 + i + 1;
+        const stage = stages[stageId - 1];
+        const open = isStageUnlocked(stageId);
+        const cleared = game.progress.clearedStages.includes(stageId);
+
+        html += `
+          <button
+            ${open ? "" : "disabled"}
+            onclick="WORLD_SYSTEM.chooseStage(${stageId})"
+            style="
+              min-height:65px;
+              border:1px solid ${cleared ? "#64d98a" : "#59677d"};
+              border-radius:8px;
+              background:${open ? "#29394f" : "#171d28"};
+              color:white;
+              opacity:${open ? "1" : ".45"};
+              font-size:12px;
+            ">
+            ${stage.boss ? "👑" : "⚔️"} Màn ${i + 1}
+            <br>${cleared ? "✓ Đã qua" : open ? "Có thể chơi" : "🔒"}
+          </button>
+        `;
+      }
+
+      html += `</div></section>`;
+    });
+
+    html += `</div>`;
+    panel.innerHTML = html;
+  }
+
+  function chooseStage(stageId) {
+    const stage = getStage(stageId);
+
+    if (!stage || !isStageUnlocked(stageId)) {
+      notify("Màn chơi đang bị khóa!");
+      return;
+    }
+
+    const old = document.getElementById("difficultyPanel");
+    if (old) old.remove();
+
+    const panel = document.createElement("div");
+    panel.id = "difficultyPanel";
+
+    panel.style.cssText = `
+      position:fixed;inset:0;z-index:10000;
+      background:#080d18dd;display:flex;
+      align-items:center;justify-content:center;padding:15px;
+    `;
+
+    let buttons = "";
+
+    difficulties.forEach(d => {
+      const open = isDifficultyUnlocked(d.id);
+
+      buttons += `
+        <button
+          ${open ? "" : "disabled"}
+          onclick="WORLD_SYSTEM.play(${stageId},${d.id})"
+          style="
+            display:block;width:100%;margin:8px 0;
+            padding:13px;border:1px solid ${d.color};
+            border-radius:9px;background:#202c40;
+            color:${d.color};font-weight:bold;
+            opacity:${open ? "1" : ".4"};
+          ">
+          ${d.name} ${open ? "" : "🔒"}
+          <br><small>Hệ số sức mạnh: x${d.multiplier}</small>
+        </button>
+      `;
+    });
+
+    panel.innerHTML = `
+      <div style="
+        width:min(360px,100%);
+        background:#172235;
+        border:1px solid #7896bd;
+        border-radius:15px;padding:20px;color:white;
+      ">
+        <h3>${stage.name}</h3>
+        <p>${regionData[stage.region].name}</p>
+        <p>${stage.boss ? "👑 Trùm: " + stage.bossName : "⚔️ Kẻ địch: " + stage.enemies.join(", ")}</p>
+        <h4>Chọn độ khó</h4>
+        ${buttons}
+        <button onclick="WORLD_SYSTEM.closeDifficulty()"
+          style="width:100%;padding:10px">Quay lại</button>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+  }
+
+  function play(stageId, difficultyId) {
+    closeDifficulty();
+    closeMap();
+    startStage(stageId, difficultyId);
+  }
+
+  function closeMap() {
+    const panel = document.getElementById("worldMapPanel");
+    if (panel) panel.remove();
+  }
+
+  function closeDifficulty() {
+    const panel = document.getElementById("difficultyPanel");
+    if (panel) panel.remove();
+  }
+
+  function markSecret(secretId) {
+    if (!game.progress.secretsFound.includes(secretId)) {
+      game.progress.secretsFound.push(secretId);
+      saveProgress();
+      notify("✨ Bạn đã phát hiện một bí mật!");
+    }
+  }
+
+  initialize();
+
+  return {
+    stages,
+    regionData,
+    difficulties,
+    renderMap,
+    chooseStage,
+    startStage,
+    clearStage,
+    getStage,
+    getStageMultiplier,
+    isStageUnlocked,
+    isRegionUnlocked,
+    isDifficultyUnlocked,
+    markSecret,
+    closeMap,
+    closeDifficulty,
+    play
+  };
+
+})();
+
+/* Nút mở bản đồ thế giới */
+window.openWorldMap = function() {
+  WORLD_SYSTEM.renderMap();
+};
+
+/* Hoàn thành màn chơi:
+   Gọi WORLD_SYSTEM.clearStage(stageId, difficultyId)
+   khi người chơi thực sự thắng màn. */
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 6/10: QUEST - NPC - HỘI THOẠI - BÍ MẬT
+===================================================== */
+
+const QUEST_SYSTEM = (() => {
+
+  const questTypes = {
+    main: "Nhiệm vụ chính",
+    side: "Nhiệm vụ phụ",
+    hunt: "Nhiệm vụ săn quái",
+    special: "Nhiệm vụ đặc biệt"
+  };
+
+  const npcs = [
+    {
+      id: "elder",
+      name: "Eldric",
+      title: "Trưởng Làng",
+      icon: "🧙",
+      region: 0,
+      x: 280,
+      dialogue: [
+        "Chào nhà thám hiểm trẻ!",
+        "Khu rừng đang bị một thế lực bóng tối xâm chiếm.",
+        "Hãy giúp ta tìm hiểu chuyện gì đang xảy ra."
+      ],
+      quests: ["main_forest_01", "side_forest_01"]
+    },
+    {
+      id: "merchant",
+      name: "Mira",
+      title: "Thương Nhân",
+      icon: "🧝",
+      region: 0,
+      x: 520,
+      dialogue: [
+        "Xin chào! Ta có nhiều món hàng thú vị.",
+        "Thu thập vàng và vật liệu để mua trang bị nhé!"
+      ],
+      quests: ["side_forest_02"]
+    },
+    {
+      id: "blacksmith",
+      name: "Brom",
+      title: "Thợ Rèn",
+      icon: "🔨",
+      region: 1,
+      x: 350,
+      dialogue: [
+        "Vũ khí tốt là người bạn đồng hành đáng tin cậy.",
+        "Mang nguyên liệu đến đây, ta sẽ chế tạo trang bị."
+      ],
+      quests: ["side_dungeon_01"]
+    },
+    {
+      id: "mystery",
+      name: "Người Lạ Mặt",
+      title: "Kẻ Bí Ẩn",
+      icon: "🕯️",
+      region: 2,
+      x: 650,
+      dialogue: [
+        "Ngươi đã đi khá xa rồi đấy.",
+        "Nhưng sự thật về Wonderland vẫn chưa được hé lộ.",
+        "Hãy tìm sáu dấu ấn cổ đại."
+      ],
+      quests: ["special_secret_01"]
+    },
+    {
+      id: "crafter",
+      name: "Liora",
+      title: "Nghệ Nhân",
+      icon: "⚒️",
+      region: 3,
+      x: 420,
+      dialogue: [
+        "Ta có thể chế tạo những món đồ hiếm.",
+        "Nhưng nguyên liệu cấp cao không dễ tìm đâu."
+      ],
+      quests: ["side_fire_01"]
+    },
+    {
+      id: "traveler",
+      name: "Aeris",
+      title: "Nhà Du Hành",
+      icon: "🧭",
+      region: 4,
+      x: 300,
+      dialogue: [
+        "Những hòn đảo này ẩn chứa nhiều bí mật.",
+        "Hãy quan sát thật kỹ khi khám phá nhé!"
+      ],
+      quests: ["special_sky_01"]
+    }
+  ];
+
+  const questList = [
+    {
+      id: "main_forest_01",
+      type: "main",
+      title: "Lời Cầu Cứu Của Khu Rừng",
+      description: "Đánh bại 5 Slime Rừng.",
+      target: "forest_slime",
+      amount: 5,
+      reward: { gold: 100, exp: 80 },
+      npc: "elder"
+    },
+    {
+      id: "side_forest_01",
+      type: "side",
+      title: "Thu Thập Nấm",
+      description: "Thu thập 3 cây nấm trong rừng.",
+      target: "forest_mushroom",
+      amount: 3,
+      reward: { gold: 70, exp: 40 },
+      npc: "elder"
+    },
+    {
+      id: "side_forest_02",
+      type: "side",
+      title: "Hàng Hóa Thất Lạc",
+      description: "Tìm lại 2 kiện hàng bị mất.",
+      target: "lost_goods",
+      amount: 2,
+      reward: { gold: 120, exp: 60 },
+      npc: "merchant"
+    },
+    {
+      id: "side_dungeon_01",
+      type: "side",
+      title: "Nguyên Liệu Thợ Rèn",
+      description: "Thu thập 4 mảnh sắt cổ.",
+      target: "old_iron",
+      amount: 4,
+      reward: { gold: 160, exp: 90 },
+      npc: "blacksmith"
+    },
+    {
+      id: "special_secret_01",
+      type: "special",
+      title: "Sáu Dấu Ấn Cổ Đại",
+      description: "Tìm 6 dấu ấn bí mật trong Wonderland.",
+      target: "ancient_seal",
+      amount: 6,
+      reward: { gold: 500, exp: 300, diamonds: 5 },
+      npc: "mystery"
+    },
+    {
+      id: "side_fire_01",
+      type: "side",
+      title: "Lửa Rèn",
+      description: "Thu thập 3 mảnh lõi dung nham.",
+      target: "lava_core",
+      amount: 3,
+      reward: { gold: 220, exp: 120 },
+      npc: "crafter"
+    },
+    {
+      id: "special_sky_01",
+      type: "special",
+      title: "Bầu Trời Thất Lạc",
+      description: "Tìm 3 mảnh bản đồ trên đảo mây.",
+      target: "sky_map",
+      amount: 3,
+      reward: { gold: 300, exp: 180 },
+      npc: "traveler"
+    }
+  ];
+
+  function initialize() {
+    if (!game.quests) game.quests = {};
+
+    if (!game.quests.active) game.quests.active = [];
+    if (!game.quests.completed) game.quests.completed = [];
+    if (!game.quests.progress) game.quests.progress = {};
+  }
+
+  function save() {
+    if (typeof saveGame === "function") {
+      try {
+        saveGame();
+      } catch (error) {
+        console.warn("Lỗi lưu nhiệm vụ:", error);
+      }
+    }
+  }
+
+  function getQuest(id) {
+    return questList.find(q => q.id === id);
+  }
+
+  function acceptQuest(id) {
+    const quest = getQuest(id);
+
+    if (!quest) {
+      notify("Không tìm thấy nhiệm vụ!");
+      return;
+    }
+
+    if (game.quests.completed.includes(id)) {
+      notify("Bạn đã hoàn thành nhiệm vụ này rồi!");
+      return;
+    }
+
+    if (game.quests.active.includes(id)) {
+      notify("Bạn đang thực hiện nhiệm vụ này!");
+      return;
+    }
+
+    game.quests.active.push(id);
+    game.quests.progress[id] = 0;
+
+    save();
+    notify("Đã nhận nhiệm vụ: " + quest.title);
+    renderQuestLog();
+  }
+
+  function addProgress(target, amount = 1) {
+    game.quests.active.forEach(id => {
+      const quest = getQuest(id);
+
+      if (!quest || quest.target !== target) return;
+
+      const current = game.quests.progress[id] || 0;
+      game.quests.progress[id] = Math.min(
+        quest.amount,
+        current + amount
+      );
+
+      if (game.quests.progress[id] >= quest.amount) {
+        notify("Hoàn thành mục tiêu: " + quest.title);
+      }
+    });
+
+    save();
+    renderQuestLog();
+  }
+
+  function claimReward(id) {
+    const quest = getQuest(id);
+
+    if (!quest || !game.quests.active.includes(id)) return;
+
+    const progress = game.quests.progress[id] || 0;
+
+    if (progress < quest.amount) {
+      notify("Bạn chưa hoàn thành mục tiêu!");
+      return;
+    }
+
+    const reward = quest.reward;
+
+    if (!game.player.gold) game.player.gold = 0;
+    if (!game.player.diamonds) game.player.diamonds = 0;
+    if (!game.player.exp) game.player.exp = 0;
+
+    game.player.gold += reward.gold || 0;
+    game.player.diamonds += reward.diamonds || 0;
+    game.player.exp += reward.exp || 0;
+
+    game.quests.active = game.quests.active.filter(x => x !== id);
+    game.quests.completed.push(id);
+
+    save();
+
+    notify(
+      "Nhận thưởng: +" + (reward.gold || 0) +
+      " vàng, +" + (reward.exp || 0) + " EXP"
+    );
+
+    renderQuestLog();
+  }
+
+  function talkToNPC(npcId) {
+    const npc = npcs.find(n => n.id === npcId);
+
+    if (!npc) return;
+
+    let old = document.getElementById("npcDialoguePanel");
+    if (old) old.remove();
+
+    const panel = document.createElement("div");
+
+    panel.id = "npcDialoguePanel";
+    panel.style.cssText = `
+      position:fixed;inset:0;z-index:10001;
+      background:#050914dd;display:flex;
+      align-items:center;justify-content:center;
+      padding:15px;color:white;
+    `;
+
+    let dialogue = npc.dialogue.map(line =>
+      `<p style="line-height:1.5">${line}</p>`
+    ).join("");
+
+    let questButtons = "";
+
+    npc.quests.forEach(id => {
+      const quest = getQuest(id);
+      if (!quest) return;
+
+      const accepted = game.quests.active.includes(id);
+      const completed = game.quests.completed.includes(id);
+      const progress = game.quests.progress[id] || 0;
+
+      questButtons += `
+        <div style="
+          padding:10px;margin:8px 0;
+          background:#26364c;border-radius:8px
+        ">
+          <b>${quest.title}</b>
+          <p>${quest.description}</p>
+          ${
+            completed
+            ? "<span>✓ Đã hoàn thành</span>"
+            : accepted
+              ? `<button onclick="QUEST_SYSTEM.claimReward('${id}')"
+                   ${progress < quest.amount ? "disabled" : ""}>
+                   ${progress < quest.amount ? progress + "/" + quest.amount : "Nhận thưởng"}
+                 </button>`
+              : `<button onclick="QUEST_SYSTEM.acceptQuest('${id}')">
+                   Nhận nhiệm vụ
+                 </button>`
+          }
+        </div>
+      `;
+    });
+
+    panel.innerHTML = `
+      <div style="
+        width:min(420px,100%);
+        max-height:85vh;overflow:auto;
+        padding:18px;border-radius:14px;
+        background:#18243a;border:1px solid #7895b7;
+      ">
+        <h2>${npc.icon} ${npc.name}</h2>
+        <small>${npc.title}</small>
+        ${dialogue}
+        <hr>
+        <h3>Nhiệm vụ</h3>
+        ${questButtons}
+        <button onclick="QUEST_SYSTEM.closeNPC()"
+          style="width:100%;padding:12px">Đóng</button>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+  }
+
+  function renderQuestLog() {
+    let panel = document.getElementById("questLogPanel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "questLogPanel";
+
+      panel.style.cssText = `
+        position:fixed;inset:0;z-index:9998;
+        background:#101522;color:white;
+        overflow:auto;padding:18px;
+      `;
+
+      document.body.appendChild(panel);
+    }
+
+    let html = `
+      <div style="max-width:650px;margin:auto">
+        <h2>📜 SỔ NHIỆM VỤ</h2>
+        <h3>Đang thực hiện</h3>
+    `;
+
+    if (game.quests.active.length === 0) {
+      html += "<p>Chưa có nhiệm vụ nào.</p>";
+    }
+
+    game.quests.active.forEach(id => {
+      const q = getQuest(id);
+      if (!q) return;
+
+      const value = game.quests.progress[id] || 0;
+
+      html += `
+        <div style="
+          background:#26364c;padding:12px;
+          border-radius:9px;margin:10px 0
+        ">
+          <b>${q.title}</b>
+          <p>${q.description}</p>
+          <p>${questTypes[q.type]}</p>
+          <p>Tiến độ: ${value}/${q.amount}</p>
+          <div style="height:8px;background:#101522;border-radius:8px">
+            <div style="
+              width:${value / q.amount * 100}%;
+              height:8px;background:#65d99a;border-radius:8px
+            "></div>
+          </div>
+          <button
+            onclick="QUEST_SYSTEM.claimReward('${id}')"
+            ${value < q.amount ? "disabled" : ""}
+            style="margin-top:10px;padding:8px">
+            Nhận phần thưởng
+          </button>
+        </div>
+      `;
+    });
+
+    html += `
+      <h3>Đã hoàn thành</h3>
+      <p>${game.quests.completed.length} nhiệm vụ</p>
+      <button onclick="QUEST_SYSTEM.closeQuestLog()"
+        style="padding:12px;width:100%">Đóng sổ nhiệm vụ</button>
+      </div>
+    `;
+
+    panel.innerHTML = html;
+  }
+
+  function closeNPC() {
+    const panel = document.getElementById("npcDialoguePanel");
+    if (panel) panel.remove();
+  }
+
+  function closeQuestLog() {
+    const panel = document.getElementById("questLogPanel");
+    if (panel) panel.remove();
+  }
+
+  function getNPCsInRegion(regionIndex) {
+    return npcs.filter(npc => npc.region === regionIndex);
+  }
+
+  function renderNPC(npc, context = ctx) {
+    if (!npc || !context) return;
+
+    context.save();
+    context.font = "28px Arial";
+    context.textAlign = "center";
+    context.fillText(npc.icon, npc.x, ground - 8);
+
+    context.font = "12px Arial";
+    context.fillStyle = "#ffffff";
+    context.fillText(npc.name, npc.x, ground + 10);
+
+    context.restore();
+  }
+
+  function discoverSecret(secretId, reward = {}) {
+    if (!game.secrets) game.secrets = [];
+
+    if (game.secrets.includes(secretId)) return;
+
+    game.secrets.push(secretId);
+
+    if (reward.gold) {
+      game.player.gold = (game.player.gold || 0) + reward.gold;
+    }
+
+    if (reward.exp) {
+      game.player.exp = (game.player.exp || 0) + reward.exp;
+    }
+
+    if (typeof WORLD_SYSTEM !== "undefined") {
+      WORLD_SYSTEM.markSecret(secretId);
+    }
+
+    save();
+    notify("✨ Phát hiện bí mật mới!");
+  }
+
+  initialize();
+
+  return {
+    npcs,
+    questList,
+    questTypes,
+    acceptQuest,
+    addProgress,
+    claimReward,
+    talkToNPC,
+    renderNPC,
+    renderQuestLog,
+    getNPCsInRegion,
+    discoverSecret,
+    closeNPC,
+    closeQuestLog
+  };
+
+})();
+
+/* Nút mở sổ nhiệm vụ */
+window.openQuestLog = function() {
+  QUEST_SYSTEM.renderQuestLog();
+};
+
+/* Ghi nhận tiến độ khi quái bị đánh bại.
+   Các loại quái cần được gắn đúng enemy.questTarget
+   ở phần tích hợp quái vật. */
+window.onQuestEnemyDefeated = function(enemy) {
+  if (!enemy) return;
+
+  if (enemy.questTarget) {
+    QUEST_SYSTEM.addProgress(enemy.questTarget, 1);
+  }
+};
+
+/* Nút tương tác NPC có thể gọi:
+   QUEST_SYSTEM.talkToNPC("elder");
+*/
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 7/10: TRANG BỊ - VŨ KHÍ - ĐÁ QUÝ - TÚI ĐỒ
+===================================================== */
+
+const EQUIPMENT_SYSTEM = (() => {
+
+  const rarities = [
+    { id: 1, name: "Thường", color: "#b8b8b8", multiplier: 1 },
+    { id: 2, name: "Không thường", color: "#62c879", multiplier: 1.2 },
+    { id: 3, name: "Hiếm", color: "#54aaff", multiplier: 1.5 },
+    { id: 4, name: "Sử thi", color: "#b477ff", multiplier: 1.9 },
+    { id: 5, name: "Huyền thoại", color: "#ffb34d", multiplier: 2.5 },
+    { id: 6, name: "Thần thoại", color: "#ff5c79", multiplier: 3.3 }
+  ];
+
+  const weapons = [
+    { id: "short_sword", name: "Kiếm Ngắn", type: "melee", icon: "⚔️", attack: 12, speed: 1.2 },
+    { id: "scythe", name: "Lưỡi Hái", type: "melee", icon: "🌙", attack: 17, speed: 0.9 },
+    { id: "sickle", name: "Liềm Chiến", type: "melee", icon: "🗡️", attack: 15, speed: 1.1 },
+    { id: "hammer", name: "Búa Chiến", type: "melee", icon: "🔨", attack: 23, speed: 0.7 },
+    { id: "katana", name: "Katana", type: "melee", icon: "⚔️", attack: 19, speed: 1.3 },
+    { id: "greatsword", name: "Đại Kiếm", type: "melee", icon: "🗡️", attack: 28, speed: 0.65 },
+    { id: "staff", name: "Trượng Phép", type: "magic", icon: "🪄", attack: 20, speed: 0.9 },
+    { id: "bow", name: "Cung Gỗ", type: "ranged", icon: "🏹", attack: 16, speed: 1.1 },
+    { id: "darts", name: "Phi Tiêu", type: "ranged", icon: "✴️", attack: 11, speed: 1.6 },
+    { id: "poison", name: "Độc Khí", type: "ranged", icon: "☠️", attack: 14, speed: 1 },
+    { id: "crossbow", name: "Nỏ Máy", type: "ranged", icon: "🎯", attack: 21, speed: 0.9 },
+    { id: "longbow", name: "Trường Cung", type: "ranged", icon: "🏹", attack: 25, speed: 0.75 }
+  ];
+
+  const armorSlots = [
+    "helmet",
+    "chest",
+    "gloves",
+    "pants",
+    "boots"
+  ];
+
+  const accessorySlots = [
+    "ring1",
+    "ring2",
+    "necklace"
+  ];
+
+  const gems = [
+    { id: "ruby", name: "Hồng Ngọc", icon: "🔴", bonus: "attack" },
+    { id: "sapphire", name: "Lam Ngọc", icon: "🔵", bonus: "defense" },
+    { id: "emerald", name: "Lục Ngọc", icon: "🟢", bonus: "hp" },
+    { id: "amethyst", name: "Thạch Anh Tím", icon: "🟣", bonus: "skillPower" },
+    { id: "topaz", name: "Hoàng Ngọc", icon: "🟡", bonus: "speed" },
+    { id: "diamond", name: "Kim Cương", icon: "💎", bonus: "all" }
+  ];
+
+  const inventorySize = 100;
+
+  function initialize() {
+    if (!game.inventory) game.inventory = [];
+    if (!game.equipment) game.equipment = {};
+    if (!game.player) return;
+
+    for (const slot of armorSlots.concat(accessorySlots)) {
+      if (!game.equipment[slot]) game.equipment[slot] = null;
+    }
+
+    if (!game.inventoryInitialized) {
+      game.inventoryInitialized = true;
+      game.inventory = game.inventory.slice(0, inventorySize);
+    }
+  }
+
+  function save() {
+    if (typeof saveGame === "function") {
+      try {
+        saveGame();
+      } catch (error) {
+        console.warn("Không thể lưu trang bị:", error);
+      }
+    }
+  }
+
+  function createItem(base, rarityId = 1, quantity = 1) {
+    const rarity = rarities.find(r => r.id === rarityId);
+    if (!rarity) return null;
+
+    return {
+      uid: "item_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+      id: base.id,
+      name: base.name,
+      icon: base.icon || "📦",
+      type: base.type || "material",
+      rarity: rarityId,
+      rarityName: rarity.name,
+      color: rarity.color,
+      quantity: quantity,
+      attack: Math.round((base.attack || 0) * rarity.multiplier),
+      defense: Math.round((base.defense || 0) * rarity.multiplier),
+      hp: Math.round((base.hp || 0) * rarity.multiplier),
+      speed: base.speed || 0,
+      sockets: rarityId >= 4 ? 2 : rarityId >= 2 ? 1 : 0,
+      special: rarityId >= 5
+    };
+  }
+
+  function addItem(item) {
+    if (!item) return false;
+
+    const stackable = ["material", "gem", "consumable"];
+
+    if (stackable.includes(item.type)) {
+      const existing = game.inventory.find(x =>
+        x && x.id === item.id &&
+        x.rarity === item.rarity &&
+        x.type === item.type
+      );
+
+      if (existing) {
+        existing.quantity += item.quantity || 1;
+        save();
+        return true;
+      }
+    }
+
+    if (game.inventory.length >= inventorySize) {
+      notify("Túi đồ đã đầy!");
+      return false;
+    }
+
+    game.inventory.push(item);
+    save();
+    return true;
+  }
+
+  function removeItem(uid, quantity = 1) {
+    const index = game.inventory.findIndex(x => x && x.uid === uid);
+    if (index < 0) return false;
+
+    const item = game.inventory[index];
+
+    if ((item.quantity || 1) > quantity) {
+      item.quantity -= quantity;
+    } else {
+      game.inventory.splice(index, 1);
+    }
+
+    save();
+    return true;
+  }
+
+  function equipItem(uid, slot) {
+    const index = game.inventory.findIndex(x => x && x.uid === uid);
+    if (index < 0) return false;
+
+    const item = game.inventory[index];
+
+    const validSlots = {
+      weapon: item.type === "weapon",
+      helmet: item.type === "armor",
+      chest: item.type === "armor",
+      gloves: item.type === "armor",
+      pants: item.type === "armor",
+      boots: item.type === "armor",
+      ring1: item.type === "accessory",
+      ring2: item.type === "accessory",
+      necklace: item.type === "accessory"
+    };
+
+    if (!validSlots[slot]) {
+      notify("Trang bị không phù hợp với vị trí này!");
+      return false;
+    }
+
+    const previous = game.equipment[slot];
+
+    game.equipment[slot] = item;
+    game.inventory.splice(index, 1);
+
+    if (previous) game.inventory.push(previous);
+
+    save();
+    updateEquipmentStats();
+    notify("Đã trang bị " + item.name);
+
+    return true;
+  }
+
+  function unequipItem(slot) {
+    const item = game.equipment[slot];
+    if (!item) return false;
+
+    if (game.inventory.length >= inventorySize) {
+      notify("Túi đồ đã đầy!");
+      return false;
+    }
+
+    game.inventory.push(item);
+    game.equipment[slot] = null;
+
+    save();
+    updateEquipmentStats();
+    return true;
+  }
+
+  function updateEquipmentStats() {
+    if (!game.player) return;
+
+    let attack = 0;
+    let defense = 0;
+    let hp = 0;
+    let speed = 0;
+
+    Object.values(game.equipment).forEach(item => {
+      if (!item) return;
+
+      attack += item.attack || 0;
+      defense += item.defense || 0;
+      hp += item.hp || 0;
+      speed += item.speed || 0;
+    });
+
+    game.player.equipmentAttack = attack;
+    game.player.equipmentDefense = defense;
+    game.player.equipmentHP = hp;
+    game.player.equipmentSpeed = speed;
+
+    game.player.maxHp =
+      (game.player.baseMaxHp || game.player.maxHp || 100) + hp;
+
+    game.player.attack =
+      (game.player.baseAttack || game.player.attack || 10) + attack;
+
+    game.player.defense =
+      (game.player.baseDefense || game.player.defense || 0) + defense;
+  }
+
+  function createWeapon(weaponId, rarityId = 1) {
+    const base = weapons.find(w => w.id === weaponId);
+    if (!base) return null;
+
+    return createItem({
+      ...base,
+      type: "weapon"
+    }, rarityId);
+  }
+
+  function createGem(gemId, rarityId = 1) {
+    const base = gems.find(g => g.id === gemId);
+    if (!base) return null;
+
+    return createItem({
+      ...base,
+      type: "gem"
+    }, rarityId);
+  }
+
+  function sortInventory(mode = "rarity") {
+    const sorted = [...game.inventory];
+
+    if (mode === "rarity") {
+      sorted.sort((a, b) => b.rarity - a.rarity);
+    } else if (mode === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (mode === "type") {
+      sorted.sort((a, b) => a.type.localeCompare(b.type));
+    }
+
+    game.inventory = sorted;
+    save();
+    renderInventory();
+  }
+
+  function renderInventory() {
+    let panel = document.getElementById("equipmentInventory");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "equipmentInventory";
+
+      panel.style.cssText = `
+        position:fixed;inset:0;z-index:10002;
+        background:#101522;color:white;
+        overflow:auto;padding:15px;
+        font-family:Arial,sans-serif;
+      `;
+
+      document.body.appendChild(panel);
+    }
+
+    let html = `
+      <div style="max-width:800px;margin:auto">
+        <div style="display:flex;justify-content:space-between">
+          <h2>🎒 TÚI ĐỒ</h2>
+          <button onclick="EQUIPMENT_SYSTEM.closeInventory()">✕</button>
+        </div>
+
+        <p>${game.inventory.length}/${inventorySize} ô đã sử dụng</p>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button onclick="EQUIPMENT_SYSTEM.sortInventory('rarity')">Sắp xếp phẩm chất</button>
+          <button onclick="EQUIPMENT_SYSTEM.sortInventory('name')">Sắp xếp tên</button>
+          <button onclick="EQUIPMENT_SYSTEM.sortInventory('type')">Sắp xếp loại</button>
+        </div>
+
+        <h3>Trang bị đang mặc</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+    `;
+
+    const slots = ["weapon"].concat(armorSlots, accessorySlots);
+
+    slots.forEach(slot => {
+      const item = game.equipment[slot];
+
+      html += `
+        <div style="
+          background:#26364c;padding:9px;
+          border:1px solid #61758e;border-radius:8px;
+        ">
+          <small>${slot}</small>
+          <p>${item ? item.icon + " " + item.name : "Trống"}</p>
+          ${
+            item
+            ? `<button onclick="EQUIPMENT_SYSTEM.unequipItem('${slot}')">Tháo</button>`
+            : ""
+          }
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+        <h3>Vật phẩm</h3>
+        <div style="
+          display:grid;
+          grid-template-columns:repeat(5,minmax(0,1fr));
+          gap:7px;
+        ">
+    `;
+
+    for (let i = 0; i < inventorySize; i++) {
+      const item = game.inventory[i];
+
+      if (!item) {
+        html += `
+          <div style="
+            min-height:65px;background:#1a2434;
+            border:1px dashed #45536a;border-radius:7px;
+          "></div>
+        `;
+        continue;
+      }
+
+      html += `
+        <button onclick="EQUIPMENT_SYSTEM.showItem('${item.uid}')"
+          style="
+            min-height:70px;background:#202d42;
+            border:1px solid ${item.color || "#65758c"};
+            border-radius:7px;color:white;
+          ">
+          <div style="font-size:21px">${item.icon}</div>
+          <small>${item.name}</small>
+          <br><small style="color:${item.color || "white"}">${item.rarityName || ""}</small>
+          <br><small>x${item.quantity || 1}</small>
+        </button>
+      `;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    panel.innerHTML = html;
+  }
+
+  function showItem(uid) {
+    const item = game.inventory.find(x => x && x.uid === uid);
+    if (!item) return;
+
+    const old = document.getElementById("itemDetailPanel");
+    if (old) old.remove();
+
+    const panel = document.createElement("div");
+    panel.id = "itemDetailPanel";
+
+    panel.style.cssText = `
+      position:fixed;inset:0;z-index:10003;
+      background:#050914cc;display:flex;
+      align-items:center;justify-content:center;padding:15px;
+    `;
+
+    let equipButtons = "";
+
+    if (item.type === "weapon") {
+      equipButtons = `
+        <button onclick="EQUIPMENT_SYSTEM.equipItem('${uid}','weapon')">
+          Trang bị vũ khí
+        </button>
+      `;
+    }
+
+    if (item.type === "armor") {
+      armorSlots.forEach(slot => {
+        equipButtons += `
+          <button onclick="EQUIPMENT_SYSTEM.equipItem('${uid}','${slot}')">
+            Mặc: ${slot}
+          </button>
+        `;
+      });
+    }
+
+    if (item.type === "accessory") {
+      accessorySlots.forEach(slot => {
+        equipButtons += `
+          <button onclick="EQUIPMENT_SYSTEM.equipItem('${uid}','${slot}')">
+            Mặc: ${slot}
+          </button>
+        `;
+      });
+    }
+
+    panel.innerHTML = `
+      <div style="
+        width:min(350px,100%);
+        padding:20px;background:#1c2b40;
+        border:1px solid ${item.color || "#aaa"};
+        border-radius:13px;color:white;
+      ">
+        <h2>${item.icon} ${item.name}</h2>
+        <p style="color:${item.color}">${item.rarityName}</p>
+        <p>Sức tấn công: ${item.attack || 0}</p>
+        <p>Phòng thủ: ${item.defense || 0}</p>
+        <p>Máu: ${item.hp || 0}</p>
+        <p>Số lượng: ${item.quantity || 1}</p>
+        ${equipButtons}
+        <button onclick="EQUIPMENT_SYSTEM.closeItem()"
+          style="display:block;margin-top:12px">Đóng</button>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+  }
+
+  function closeItem() {
+    const panel = document.getElementById("itemDetailPanel");
+    if (panel) panel.remove();
+  }
+
+  function closeInventory() {
+    closeItem();
+    const panel = document.getElementById("equipmentInventory");
+    if (panel) panel.remove();
+  }
+
+  initialize();
+
+  return {
+    rarities,
+    weapons,
+    armorSlots,
+    accessorySlots,
+    gems,
+    inventorySize,
+    createItem,
+    createWeapon,
+    createGem,
+    addItem,
+    removeItem,
+    equipItem,
+    unequipItem,
+    updateEquipmentStats,
+    sortInventory,
+    renderInventory,
+    showItem,
+    closeItem,
+    closeInventory
+  };
+
+})();
+
+/* Mở túi đồ mới */
+window.openEquipmentInventory = function() {
+  EQUIPMENT_SYSTEM.renderInventory();
+};
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 8/10: CHẾ TẠO - KHAI THÁC - VẬT PHẨM
+===================================================== */
+
+const CRAFTING_SYSTEM = (() => {
+
+  const materials = [
+    { id: "wood", name: "Gỗ Cổ", tier: 1, price: 10, icon: "🪵" },
+    { id: "stone", name: "Đá Thô", tier: 1, price: 12, icon: "🪨" },
+    { id: "iron", name: "Sắt", tier: 2, price: 25, icon: "⚙️" },
+    { id: "forest_leaf", name: "Lá Rừng", tier: 2, price: 30, icon: "🍃" },
+    { id: "silver", name: "Bạc", tier: 3, price: 55, icon: "🥈" },
+    { id: "magic_dust", name: "Bụi Phép", tier: 3, price: 70, icon: "✨" },
+    { id: "gold_ore", name: "Quặng Vàng", tier: 4, price: 110, icon: "🟡" },
+    { id: "crystal", name: "Tinh Thể Ma Thuật", tier: 4, price: 130, icon: "💠" },
+    { id: "ancient_core", name: "Lõi Cổ Đại", tier: 5, price: 0, icon: "🔮" },
+    { id: "dragon_scale", name: "Vảy Rồng", tier: 5, price: 0, icon: "🐉" },
+    { id: "void_essence", name: "Tinh Chất Hư Vô", tier: 6, price: 0, icon: "🌑" },
+    { id: "divine_heart", name: "Trái Tim Thần Thánh", tier: 6, price: 0, icon: "💎" }
+  ];
+
+  const miningTools = [
+    { id: "wood_pick", name: "Cuốc Gỗ", tier: 1, durability: 10, price: 50 },
+    { id: "iron_pick", name: "Cuốc Sắt", tier: 2, durability: 25, price: 180 },
+    { id: "magic_pick", name: "Cuốc Ma Thuật", tier: 3, durability: 50, price: 500 },
+    { id: "ancient_pick", name: "Cuốc Cổ Đại", tier: 4, durability: 100, price: 1200 }
+  ];
+
+  const recipes = [
+    {
+      id: "iron_sword",
+      name: "Kiếm Sắt",
+      icon: "⚔️",
+      materials: { iron: 5, wood: 2 },
+      gold: 40,
+      result: { id: "iron_sword", name: "Kiếm Sắt", type: "weapon", icon: "⚔️", attack: 25 }
+    },
+    {
+      id: "magic_staff",
+      name: "Trượng Phép",
+      icon: "🪄",
+      materials: { magic_dust: 4, wood: 3 },
+      gold: 100,
+      result: { id: "magic_staff", name: "Trượng Phép", type: "weapon", icon: "🪄", attack: 35 }
+    },
+    {
+      id: "forest_armor",
+      name: "Giáp Rừng",
+      icon: "🛡️",
+      materials: { forest_leaf: 5, iron: 3 },
+      gold: 80,
+      result: { id: "forest_armor", name: "Giáp Rừng", type: "armor", icon: "🛡️", defense: 18 }
+    },
+    {
+      id: "ancient_blade",
+      name: "Cổ Kiếm",
+      icon: "🗡️",
+      materials: { ancient_core: 2, dragon_scale: 2 },
+      gold: 500,
+      result: { id: "ancient_blade", name: "Cổ Kiếm", type: "weapon", icon: "🗡️", attack: 90 }
+    }
+  ];
+
+  const foods = [
+    { id: "food_1", name: "Bánh Mì Nhỏ", tier: 1, hp: 20, duration: 0, icon: "🍞", materials: { wood: 1 } },
+    { id: "food_2", name: "Súp Rừng", tier: 2, hp: 40, duration: 0, icon: "🥣", materials: { forest_leaf: 2 } },
+    { id: "food_3", name: "Thịt Nướng", tier: 3, hp: 65, duration: 0, icon: "🍖", materials: { iron: 1, forest_leaf: 2 } },
+    { id: "food_4", name: "Món Ăn Ma Thuật", tier: 4, hp: 90, duration: 0, icon: "🍲", materials: { magic_dust: 2, silver: 2 } },
+    { id: "food_5", name: "Tiệc Hoàng Gia", tier: 5, hp: 130, duration: 0, icon: "🍗", materials: { gold_ore: 2, crystal: 2 } },
+    {
+      id: "food_6",
+      name: "Bữa Tiệc Thần Thánh",
+      tier: 6,
+      hp: 170,
+      duration: 20,
+      cooldown: 45,
+      icon: "🍱",
+      materials: { divine_heart: 1, void_essence: 1 },
+      buffs: {
+        speed: 0.2,
+        magicResistance: 0.2,
+        defense: 0.2,
+        weaponDamage: 0.1
+      }
+    }
+  ];
+
+  function initialize() {
+    if (!game.materials) game.materials = {};
+    if (!game.crafting) game.crafting = {};
+    if (!game.mining) game.mining = {};
+    if (!game.mining.tools) game.mining.tools = {};
+    if (!game.mining.nodes) game.mining.nodes = [];
+    if (!game.consumableCooldowns) game.consumableCooldowns = {};
+    if (!game.foodBuffs) game.foodBuffs = {};
+  }
+
+  function save() {
+    if (typeof saveGame === "function") {
+      try {
+        saveGame();
+      } catch (error) {
+        console.warn("Lỗi lưu chế tạo:", error);
+      }
+    }
+  }
+
+  function getMaterial(id) {
+    return materials.find(m => m.id === id);
+  }
+
+  function countMaterial(id) {
+    return game.materials[id] || 0;
+  }
+
+  function addMaterial(id, amount = 1) {
+    if (!getMaterial(id) || amount <= 0) return false;
+
+    game.materials[id] = countMaterial(id) + amount;
+    save();
+    return true;
+  }
+
+  function consumeMaterial(id, amount) {
+    if (countMaterial(id) < amount) return false;
+
+    game.materials[id] -= amount;
+    return true;
+  }
+
+  function buyMaterial(id, amount = 1) {
+    const material = getMaterial(id);
+
+    if (!material || material.tier >= 5) {
+      notify("Nguyên liệu này không thể mua trực tiếp!");
+      return false;
+    }
+
+    const price = material.price * amount;
+
+    if ((game.player.gold || 0) < price) {
+      notify("Không đủ vàng!");
+      return false;
+    }
+
+    game.player.gold -= price;
+    addMaterial(id, amount);
+
+    notify("Đã mua " + material.name + " x" + amount);
+    save();
+    return true;
+  }
+
+  function buyTool(id) {
+    const tool = miningTools.find(t => t.id === id);
+    if (!tool) return false;
+
+    if ((game.player.gold || 0) < tool.price) {
+      notify("Không đủ vàng mua dụng cụ!");
+      return false;
+    }
+
+    game.player.gold -= tool.price;
+
+    game.mining.tools[id] = {
+      durability: tool.durability,
+      maxDurability: tool.durability,
+      tier: tool.tier
+    };
+
+    save();
+    notify("Đã mua " + tool.name);
+    return true;
+  }
+
+  function spawnMiningNode(x, y, region, stage) {
+    const node = {
+      id: "node_" + Date.now() + "_" + Math.floor(Math.random() * 9999),
+      x,
+      y,
+      region,
+      stage,
+      active: true,
+      progress: 0,
+      requiredTime: 5 + Math.min(stage, 10) * 0.5,
+      attempts: 3
+    };
+
+    game.mining.nodes.push(node);
+    return node;
+  }
+
+  function getMiningTool() {
+    const tools = Object.entries(game.mining.tools)
+      .filter(([id, data]) => data && data.durability > 0)
+      .sort((a, b) => b[1].tier - a[1].tier);
+
+    return tools.length ? tools[0] : null;
+  }
+
+  function startMining(nodeId) {
+    const node = game.mining.nodes.find(n => n.id === nodeId);
+
+    if (!node || !node.active) {
+      notify("Mỏ đá không còn khai thác được!");
+      return false;
+    }
+
+    const tool = getMiningTool();
+
+    if (!tool) {
+      notify("Bạn cần mua cuốc khai thác!");
+      return false;
+    }
+
+    if (game.mining.currentNode) {
+      notify("Bạn đang khai thác một mỏ khác!");
+      return false;
+    }
+
+    game.mining.currentNode = nodeId;
+    node.progress = 0;
+
+    if (game.keys) {
+      game.keys.left = false;
+      game.keys.right = false;
+    }
+
+    notify("Bắt đầu khai thác! Hãy đứng yên.");
+    return true;
+  }
+
+  function updateMining(deltaSeconds) {
+    const nodeId = game.mining.currentNode;
+    if (!nodeId) return;
+
+    const node = game.mining.nodes.find(n => n.id === nodeId);
+    if (!node || !node.active) {
+      game.mining.currentNode = null;
+      return;
+    }
+
+    node.progress += deltaSeconds;
+
+    if (node.progress >= node.requiredTime) {
+      finishMining(node);
+    }
+  }
+
+  function finishMining(node) {
+    const tool = getMiningTool();
+
+    if (!tool) {
+      game.mining.currentNode = null;
+      return;
+    }
+
+    const toolData = game.mining.tools[tool[0]];
+    toolData.durability = Math.max(0, toolData.durability - 1);
+
+    node.attempts--;
+
+    const chance = Math.min(0.8, 0.25 + node.stage * 0.04);
+    const roll = Math.random();
+
+    if (roll < chance) {
+      const possible = materials.filter(m =>
+        m.tier <= Math.min(4, 1 + Math.floor(node.stage / 3))
+      );
+
+      const result = possible[Math.floor(Math.random() * possible.length)];
+
+      addMaterial(result.id, 1);
+      notify("⛏️ Tìm thấy " + result.name + "!");
+    } else {
+      notify("Lần khai thác này không tìm được nguyên liệu.");
+    }
+
+    if (node.attempts <= 0) {
+      node.active = false;
+      notify("Mỏ đá đã cạn!");
+    }
+
+    game.mining.currentNode = null;
+    save();
+  }
+
+  function interruptMining() {
+    if (!game.mining.currentNode) return;
+
+    const node = game.mining.nodes.find(
+      n => n.id === game.mining.currentNode
+    );
+
+    if (node) node.progress = 0;
+
+    game.mining.currentNode = null;
+    notify("Khai thác bị gián đoạn!");
+  }
+
+  function canCraft(recipe) {
+    if ((game.player.gold || 0) < recipe.gold) return false;
+
+    return Object.entries(recipe.materials).every(
+      ([id, amount]) => countMaterial(id) >= amount
+    );
+  }
+
+  function craft(recipeId) {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) return false;
+
+    if (!canCraft(recipe)) {
+      notify("Không đủ nguyên liệu hoặc vàng!");
+      return false;
+    }
+
+    Object.entries(recipe.materials).forEach(([id, amount]) => {
+      consumeMaterial(id, amount);
+    });
+
+    game.player.gold -= recipe.gold;
+
+    const item = EQUIPMENT_SYSTEM.createItem(
+      recipe.result,
+      recipe.id === "ancient_blade" ? 5 : 2
+    );
+
+    if (!EQUIPMENT_SYSTEM.addItem(item)) {
+      Object.entries(recipe.materials).forEach(([id, amount]) => {
+        addMaterial(id, amount);
+      });
+
+      game.player.gold += recipe.gold;
+      notify("Túi đồ đầy! Đã hoàn lại nguyên liệu.");
+      return false;
+    }
+
+    save();
+    notify("⚒️ Chế tạo thành công: " + recipe.name);
+    return true;
+  }
+
+  function craftFood(foodId) {
+    const food = foods.find(f => f.id === foodId);
+    if (!food) return false;
+
+    for (const [id, amount] of Object.entries(food.materials)) {
+      if (countMaterial(id) < amount) {
+        notify("Không đủ nguyên liệu nấu ăn!");
+        return false;
+      }
+    }
+
+    Object.entries(food.materials).forEach(([id, amount]) => {
+      consumeMaterial(id, amount);
+    });
+
+    const item = EQUIPMENT_SYSTEM.createItem({
+      id: food.id,
+      name: food.name,
+      icon: food.icon,
+      type: "consumable",
+      hp: food.hp
+    }, food.tier);
+
+    item.foodData = food;
+
+    if (!EQUIPMENT_SYSTEM.addItem(item)) {
+      Object.entries(food.materials).forEach(([id, amount]) => {
+        addMaterial(id, amount);
+      });
+      return false;
+    }
+
+    save();
+    notify("🍲 Đã nấu " + food.name);
+    return true;
+  }
+
+  function usePotion(amount = 30) {
+    const now = Date.now();
+    const cooldown = game.consumableCooldowns.potion || 0;
+
+    if (now < cooldown) {
+      notify("Bình máu đang hồi!");
+      return false;
+    }
+
+    const player = game.player;
+    player.hp = Math.min(player.maxHp, player.hp + amount);
+
+    game.consumableCooldowns.potion = now + 5000;
+
+    save();
+    notify("❤️ Đã hồi " + amount + " HP");
+    return true;
+  }
+
+  function useFood(uid) {
+    const item = game.inventory.find(x => x && x.uid === uid);
+
+    if (!item || !item.foodData) {
+      notify("Không tìm thấy thức ăn!");
+      return false;
+    }
+
+    const food = item.foodData;
+    const now = Date.now();
+    const cooldown = game.consumableCooldowns.food || 0;
+
+    if (now < cooldown) {
+      notify("Thức ăn đang hồi!");
+      return false;
+    }
+
+    game.player.hp = Math.min(
+      game.player.maxHp,
+      game.player.hp + food.hp
+    );
+
+    if (food.tier === 6) {
+      game.foodBuffs = {
+        ...food.buffs,
+        expiresAt: now + food.duration * 1000
+      };
+
+      game.consumableCooldowns.food =
+        now + food.cooldown * 1000;
+    } else {
+      game.consumableCooldowns.food = now + 10000;
+    }
+
+    EQUIPMENT_SYSTEM.removeItem(uid, 1);
+    save();
+
+    notify("🍱 Đã sử dụng " + food.name);
+    return true;
+  }
+
+  function updateBuffs() {
+    if (
+      game.foodBuffs.expiresAt &&
+      Date.now() >= game.foodBuffs.expiresAt
+    ) {
+      game.foodBuffs = {};
+      notify("Hiệu ứng thức ăn đã kết thúc.");
+    }
+  }
+
+  function renderCrafting() {
+    let panel = document.getElementById("craftingPanel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "craftingPanel";
+      panel.style.cssText = `
+        position:fixed;inset:0;z-index:10004;
+        background:#101522;color:white;
+        padding:15px;overflow:auto;
+      `;
+      document.body.appendChild(panel);
+    }
+
+    let html = `
+      <div style="max-width:700px;margin:auto">
+        <h2>⚒️ XƯỞNG CHẾ TẠO</h2>
+        <h3>Nguyên liệu</h3>
+    `;
+
+    materials.forEach(m => {
+      html += `
+        <div style="
+          padding:9px;margin:5px 0;
+          background:#26364c;border-radius:7px;
+        ">
+          ${m.icon} ${m.name} - Cấp ${m.tier}
+          <br>Số lượng: ${countMaterial(m.id)}
+          ${
+            m.tier <= 4
+            ? `<button onclick="CRAFTING_SYSTEM.buyMaterial('${m.id}',1)">
+                 Mua ${m.price} vàng
+               </button>`
+            : "<small>Chỉ tìm được qua nhiệm vụ đặc biệt</small>"
+          }
+        </div>
+      `;
+    });
+
+    html += "<h3>Công thức chế tạo</h3>";
+
+    recipes.forEach(r => {
+      html += `
+        <div style="
+          padding:10px;margin:7px 0;
+          background:#26364c;border-radius:8px;
+        ">
+          <b>${r.icon} ${r.name}</b>
+          <p>Nguyên liệu: ${
+            Object.entries(r.materials)
+              .map(([id, amount]) => {
+                const m = getMaterial(id);
+                return (m ? m.name : id) + " x" + amount;
+              }).join(", ")
+          }</p>
+          <p>Phí chế tạo: ${r.gold} vàng</p>
+          <button onclick="CRAFTING_SYSTEM.craft('${r.id}')">
+            Chế tạo
+          </button>
+        </div>
+      `;
+    });
+
+    html += "<h3>Thức ăn</h3>";
+
+    foods.forEach(f => {
+      html += `
+        <div style="
+          padding:10px;margin:7px 0;
+          background:#26364c;border-radius:8px;
+        ">
+          ${f.icon} ${f.name} - Cấp ${f.tier}
+          <p>Hồi ${f.hp} HP</p>
+          <button onclick="CRAFTING_SYSTEM.craftFood('${f.id}')">
+            Nấu ăn
+          </button>
+        </div>
+      `;
+    });
+
+    html += `
+        <button onclick="CRAFTING_SYSTEM.closeCrafting()"
+          style="padding:12px;width:100%">Đóng</button>
+      </div>
+    `;
+
+    panel.innerHTML = html;
+  }
+
+  function closeCrafting() {
+    const panel = document.getElementById("craftingPanel");
+    if (panel) panel.remove();
+  }
+
+  initialize();
+
+  return {
+    materials,
+    miningTools,
+    recipes,
+    foods,
+    addMaterial,
+    countMaterial,
+    buyMaterial,
+    buyTool,
+    spawnMiningNode,
+    startMining,
+    updateMining,
+    interruptMining,
+    craft,
+    craftFood,
+    usePotion,
+    useFood,
+    updateBuffs,
+    renderCrafting,
+    closeCrafting
+  };
+
+})();
+
+/* Mở xưởng chế tạo */
+window.openCrafting = function() {
+  CRAFTING_SYSTEM.renderCrafting();
+};
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PHẦN 9/10: SAVE - SKILL - LEVEL - THỜI TIẾT
+===================================================== */
+
+const GAME_SYSTEM = (() => {
+
+  const MAX_LEVEL = 100;
+  const SAVE_SLOTS = 3;
+
+  const skillTrees = {
+    warrior: [
+      { id: "warrior_attack", name: "Cuồng Trảm", branch: "Tấn công", power: 20 },
+      { id: "warrior_defense", name: "Thép Kiên Cường", branch: "Phòng thủ", power: 15 },
+      { id: "warrior_fury", name: "Nộ Khí", branch: "Cuồng nộ", power: 30 }
+    ],
+    mage: [
+      { id: "mage_magic", name: "Ma Lực", branch: "Ma thuật", power: 25 },
+      { id: "mage_element", name: "Nguyên Tố", branch: "Nguyên tố", power: 30 },
+      { id: "mage_control", name: "Khống Chế", branch: "Khống chế", power: 15 }
+    ],
+    archer: [
+      { id: "archer_speed", name: "Bước Chân Gió", branch: "Tốc độ", power: 15 },
+      { id: "archer_pierce", name: "Xuyên Phá", branch: "Xuyên giáp", power: 25 },
+      { id: "archer_sniper", name: "Bắn Tỉa", branch: "Bắn xa", power: 35 }
+    ],
+    assassin: [
+      { id: "assassin_strike", name: "Ám Sát", branch: "Sát thương", power: 30 },
+      { id: "assassin_evasion", name: "Ảnh Bộ", branch: "Né tránh", power: 15 },
+      { id: "assassin_poison", name: "Độc Ảnh", branch: "Độc", power: 20 }
+    ],
+    paladin: [
+      { id: "paladin_defense", name: "Thánh Thuẫn", branch: "Phòng thủ", power: 25 },
+      { id: "paladin_healing", name: "Ánh Sáng Chữa Lành", branch: "Hồi phục", power: 30 },
+      { id: "paladin_light", name: "Thánh Quang", branch: "Thánh quang", power: 25 }
+    ],
+    summoner: [
+      { id: "summoner_familiar", name: "Linh Thú", branch: "Triệu hồi", power: 20 },
+      { id: "summoner_power", name: "Cường Hóa", branch: "Tăng sức mạnh", power: 25 },
+      { id: "summoner_call", name: "Triệu Gọi", branch: "Triệu gọi", power: 35 }
+    ]
+  };
+
+  const weatherTypes = [
+    { id: "clear", name: "Trời quang", icon: "☀️" },
+    { id: "rain", name: "Mưa", icon: "🌧️" },
+    { id: "fog", name: "Sương mù", icon: "🌫️" },
+    { id: "wind", name: "Gió mạnh", icon: "🌬️" },
+    { id: "snow", name: "Tuyết", icon: "❄️" }
+  ];
+
+  function initialize() {
+    if (!game.player) return;
+
+    if (game.player.level == null) game.player.level = 1;
+    if (game.player.exp == null) game.player.exp = 0;
+    if (game.player.skillPoints == null) game.player.skillPoints = 0;
+
+    if (!game.skillProgress) game.skillProgress = {};
+    if (!game.skillProgress.levels) game.skillProgress.levels = {};
+    if (!game.skillProgress.unlocked) game.skillProgress.unlocked = [];
+
+    if (!game.worldTime) {
+      game.worldTime = {
+        minutes: 8 * 60,
+        day: 1,
+        weather: "clear",
+        weatherTimer: 0
+      };
+    }
+  }
+
+  function experienceRequired(level) {
+    return Math.floor(100 + level * level * 35);
+  }
+
+  function addExperience(amount) {
+    const player = game.player;
+    if (!player || player.level >= MAX_LEVEL) return;
+
+    player.exp += amount;
+
+    while (
+      player.level < MAX_LEVEL &&
+      player.exp >= experienceRequired(player.level)
+    ) {
+      player.exp -= experienceRequired(player.level);
+      player.level++;
+      player.skillPoints = (player.skillPoints || 0) + 1;
+
+      player.maxHp += 10;
+      player.hp = player.maxHp;
+
+      notify("⭐ LÊN CẤP " + player.level + "!");
+
+      if (typeof checkLevelUp === "function") {
+        // Không gọi lại hàm cũ để tránh cộng cấp hai lần.
+        // Điểm kỹ năng được cộng trực tiếp ở đây.
+      }
+    }
+
+    if (player.level >= MAX_LEVEL) {
+      player.exp = 0;
+    }
+
+    saveCurrent();
+  }
+
+  function getClassSkills(classId) {
+    return skillTrees[classId] || [];
+  }
+
+  function upgradeSkill(skillId) {
+    const player = game.player;
+    if (!player) return false;
+
+    const classId = player.classId || player.class || "warrior";
+    const skills = getClassSkills(classId);
+    const skill = skills.find(s => s.id === skillId);
+
+    if (!skill) {
+      notify("Kỹ năng không thuộc nghề hiện tại!");
+      return false;
+    }
+
+    const current = game.skillProgress.levels[skillId] || 0;
+
+    if (current >= 5) {
+      notify("Kỹ năng đã đạt cấp tối đa!");
+      return false;
+    }
+
+    if ((player.skillPoints || 0) <= 0) {
+      notify("Không đủ điểm kỹ năng!");
+      return false;
+    }
+
+    game.skillProgress.levels[skillId] = current + 1;
+    player.skillPoints--;
+
+    if (!game.skillProgress.unlocked.includes(skillId)) {
+      game.skillProgress.unlocked.push(skillId);
+    }
+
+    saveCurrent();
+    renderSkills();
+
+    notify("Đã nâng cấp " + skill.name);
+    return true;
+  }
+
+  function renderSkills() {
+    let panel = document.getElementById("skillTreePanel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "skillTreePanel";
+      panel.style.cssText = `
+        position:fixed;inset:0;z-index:10005;
+        background:#101522;color:white;
+        padding:16px;overflow:auto;
+      `;
+      document.body.appendChild(panel);
+    }
+
+    const classId = game.player.classId || game.player.class || "warrior";
+    const skills = getClassSkills(classId);
+
+    let html = `
+      <div style="max-width:650px;margin:auto">
+        <h2>✨ CÂY KỸ NĂNG</h2>
+        <p>Điểm kỹ năng: ${game.player.skillPoints || 0}</p>
+    `;
+
+    skills.forEach(skill => {
+      const level = game.skillProgress.levels[skill.id] || 0;
+
+      html += `
+        <div style="
+          background:#26364c;padding:13px;
+          margin:9px 0;border-radius:9px;
+        ">
+          <b>${skill.name}</b>
+          <p>Nhánh: ${skill.branch}</p>
+          <p>Cấp: ${level}/5</p>
+          <p>Sức mạnh cơ bản: ${skill.power}</p>
+          <button
+            onclick="GAME_SYSTEM.upgradeSkill('${skill.id}')"
+            ${level >= 5 || game.player.skillPoints <= 0 ? "disabled" : ""}>
+            Nâng cấp
+          </button>
+        </div>
+      `;
+    });
+
+    html += `
+        <button onclick="GAME_SYSTEM.closeSkills()"
+          style="width:100%;padding:12px">Đóng</button>
+      </div>
+    `;
+
+    panel.innerHTML = html;
+  }
+
+  function closeSkills() {
+    const panel = document.getElementById("skillTreePanel");
+    if (panel) panel.remove();
+  }
+
+  function getSaveKey(slot) {
+    return "wonderland_save_slot_" + slot;
+  }
+
+  function getSnapshot() {
+    const snapshot = JSON.parse(JSON.stringify(game));
+    snapshot.savedAt = new Date().toISOString();
+    snapshot.version = "1.0";
+    return snapshot;
+  }
+
+  function saveSlot(slot) {
+    if (slot < 1 || slot > SAVE_SLOTS) return false;
+
+    try {
+      localStorage.setItem(
+        getSaveKey(slot),
+        JSON.stringify(getSnapshot())
+      );
+
+      notify("💾 Đã lưu vào ô " + slot);
+      return true;
+    } catch (error) {
+      notify("Không thể lưu game trên thiết bị này!");
+      console.error(error);
+      return false;
+    }
+  }
+
+  function loadSlot(slot) {
+    if (slot < 1 || slot > SAVE_SLOTS) return false;
+
+    try {
+      const raw = localStorage.getItem(getSaveKey(slot));
+
+      if (!raw) {
+        notify("Ô lưu này đang trống!");
+        return false;
+      }
+
+      const data = JSON.parse(raw);
+
+      if (!data || !data.player) {
+        notify("Dữ liệu lưu không hợp lệ!");
+        return false;
+      }
+
+      Object.keys(game).forEach(key => delete game[key]);
+      Object.assign(game, data);
+
+      initialize();
+
+      notify("📂 Đã tải ô lưu " + slot);
+
+      if (typeof updateHUD === "function") updateHUD();
+      if (typeof drawWorld === "function") drawWorld();
+
+      return true;
+    } catch (error) {
+      notify("Không thể đọc dữ liệu lưu!");
+      console.error(error);
+      return false;
+    }
+  }
+
+  function deleteSlot(slot) {
+    if (slot < 1 || slot > SAVE_SLOTS) return false;
+
+    localStorage.removeItem(getSaveKey(slot));
+    notify("Đã xóa ô lưu " + slot);
+    renderSaveMenu();
+    return true;
+  }
+
+  function saveCurrent() {
+    try {
+      if (typeof saveGame === "function") {
+        saveGame();
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Lỗi lưu tiến trình:", error);
+      return false;
+    }
+  }
+
+  function exportSave(slot) {
+    const raw = localStorage.getItem(getSaveKey(slot));
+
+    if (!raw) {
+      notify("Ô lưu đang trống!");
+      return;
+    }
+
+    const blob = new Blob([raw], {
+      type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "wonderland_save_" + slot + ".json";
+    link.click();
+
+    URL.revokeObjectURL(url);
+    notify("Đã xuất bản sao lưu!");
+  }
+
+  function importSave(file) {
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+
+        if (!data || !data.player || !data.version) {
+          throw new Error("Invalid save");
+        }
+
+        const slot = Number(prompt("Nhập ô lưu muốn ghi đè (1-3):"));
+
+        if (slot < 1 || slot > 3) return;
+
+        localStorage.setItem(
+          getSaveKey(slot),
+          JSON.stringify(data)
+        );
+
+        notify("Đã nhập bản sao lưu!");
+        renderSaveMenu();
+      } catch (error) {
+        notify("Tệp lưu không hợp lệ!");
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
+  function renderSaveMenu() {
+    let panel = document.getElementById("saveMenuPanel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "saveMenuPanel";
+      panel.style.cssText = `
+        position:fixed;inset:0;z-index:10006;
+        background:#101522;color:white;
+        padding:18px;overflow:auto;
+      `;
+      document.body.appendChild(panel);
+    }
+
+    let html = `
+      <div style="max-width:600px;margin:auto">
+        <h2>💾 QUẢN LÝ DỮ LIỆU</h2>
+    `;
+
+    for (let slot = 1; slot <= 3; slot++) {
+      const raw = localStorage.getItem(getSaveKey(slot));
+      let description = "Ô lưu trống";
+
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          description =
+            "Cấp " + (data.player.level || 1) +
+            " · " + (data.player.name || "Nhân vật") +
+            "<br>" + (data.savedAt || "");
+        } catch (e) {
+          description = "Dữ liệu không đọc được";
+        }
+      }
+
+      html += `
+        <div style="
+          padding:13px;margin:10px 0;
+          background:#26364c;border-radius:9px;
+        ">
+          <h3>Ô lưu ${slot}</h3>
+          <p>${description}</p>
+          <button onclick="GAME_SYSTEM.saveSlot(${slot})">Lưu</button>
+          <button onclick="GAME_SYSTEM.loadSlot(${slot})">Tải</button>
+          <button onclick="GAME_SYSTEM.exportSave(${slot})">Xuất</button>
+          <button onclick="GAME_SYSTEM.deleteSlot(${slot})">Xóa</button>
+        </div>
+      `;
+    }
+
+    html += `
+        <button onclick="document.getElementById('saveImportFile').click()">
+          Nhập bản sao lưu
+        </button>
+        <input id="saveImportFile" type="file"
+          accept=".json,application/json"
+          style="display:none"
+          onchange="GAME_SYSTEM.importSave(this.files[0])">
+
+        <button onclick="GAME_SYSTEM.closeSaveMenu()"
+          style="width:100%;padding:12px;margin-top:15px">
+          Đóng
+        </button>
+      </div>
+    `;
+
+    panel.innerHTML = html;
+  }
+
+  function closeSaveMenu() {
+    const panel = document.getElementById("saveMenuPanel");
+    if (panel) panel.remove();
+  }
+
+  function updateWorldTime(deltaSeconds) {
+    if (!game.worldTime) return;
+
+    const time = game.worldTime;
+
+    time.minutes += deltaSeconds * 2;
+
+    if (time.minutes >= 1440) {
+      time.minutes -= 1440;
+      time.day++;
+    }
+
+    time.weatherTimer += deltaSeconds;
+
+    if (time.weatherTimer >= 180) {
+      time.weatherTimer = 0;
+
+      const weather =
+        weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+
+      time.weather = weather.id;
+    }
+  }
+
+  function getTimeText() {
+    const time = game.worldTime;
+    const hour = Math.floor(time.minutes / 60);
+    const minute = Math.floor(time.minutes % 60);
+
+    return (
+      String(hour).padStart(2, "0") + ":" +
+      String(minute).padStart(2, "0")
+    );
+  }
+
+  function getWeather() {
+    return weatherTypes.find(
+      w => w.id === game.worldTime.weather
+    ) || weatherTypes[0];
+  }
+
+  function renderPauseMenu() {
+    let panel = document.getElementById("pauseMenuPanel");
+
+    if (panel) return;
+
+    panel = document.createElement("div");
+    panel.id = "pauseMenuPanel";
+
+    panel.style.cssText = `
+      position:fixed;inset:0;z-index:10007;
+      background:#050914dd;
+      display:flex;align-items:center;
+      justify-content:center;padding:15px;
+    `;
+
+    panel.innerHTML = `
+      <div style="
+        width:min(350px,100%);
+        padding:22px;background:#1d2c43;
+        border:1px solid #7896bd;
+        border-radius:15px;color:white;text-align:center;
+      ">
+        <h2>⏸ TẠM DỪNG</h2>
+        <button onclick="GAME_SYSTEM.closePauseMenu()"
+          style="width:100%;padding:12px;margin:5px">Tiếp tục</button>
+        <button onclick="GAME_SYSTEM.saveSlot(1)"
+          style="width:100%;padding:12px;margin:5px">Lưu game</button>
+        <button onclick="toggleSound()"
+          style="width:100%;padding:12px;margin:5px">Bật / Tắt âm thanh</button>
+        <button onclick="GAME_SYSTEM.openSaveMenu()"
+          style="width:100%;padding:12px;margin:5px">Quản lý ô lưu</button>
+        <button onclick="GAME_SYSTEM.closePauseMenu()"
+          style="width:100%;padding:12px;margin:5px">Quay lại game</button>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+  }
+
+  function closePauseMenu() {
+    const panel = document.getElementById("pauseMenuPanel");
+    if (panel) panel.remove();
+  }
+
+  initialize();
+
+  return {
+    MAX_LEVEL,
+    SAVE_SLOTS,
+    skillTrees,
+    weatherTypes,
+    experienceRequired,
+    addExperience,
+    upgradeSkill,
+    renderSkills,
+    closeSkills,
+    saveSlot,
+    loadSlot,
+    deleteSlot,
+    saveCurrent,
+    exportSave,
+    importSave,
+    renderSaveMenu,
+    closeSaveMenu,
+    updateWorldTime,
+    getTimeText,
+    getWeather,
+    renderPauseMenu,
+    closePauseMenu,
+    openSaveMenu: renderSaveMenu
+  };
+
+})();
+
+/* Các nút mở hệ thống */
+window.openSkillTree = function() {
+  GAME_SYSTEM.renderSkills();
+};
+
+window.openSaveMenu = function() {
+  GAME_SYSTEM.renderSaveMenu();
+};
+
+window.openPauseMenu = function() {
+  GAME_SYSTEM.renderPauseMenu();
+};
+
+/* =====================================================
+   GO TO WONDERLAND V1.0
+   PART 10/10 - FINAL UI & SYSTEM CONNECTION
+===================================================== */
+
+const WONDERLAND_FINAL = {
+  started: false,
+  lastTick: performance.now(),
+  audio: null,
+  particles: [],
+  completedStages: new Set(),
+
+  init() {
+    if (this.started) return;
+    this.started = true;
+
+    this.addStyle();
+    this.addQuickMenu();
+    this.addMobileControls();
+    this.connectSystems();
+    this.startWeatherEffects();
+
+    console.log("Go to Wonderland - Final UI initialized");
+  },
+
+  addStyle() {
+    if (document.getElementById("wonderland-final-style")) return;
+
+    const style = document.createElement("style");
+    style.id = "wonderland-final-style";
+    style.textContent = `
+      #wl-final-menu {
+        position:fixed;
+        top:8px;
+        right:8px;
+        z-index:9998;
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+        gap:5px;
+        max-width:75vw;
+        pointer-events:auto;
+      }
+
+      .wl-menu-btn {
+        border:1px solid #d9b76b;
+        background:#24213a;
+        color:#fff1c7;
+        padding:8px 10px;
+        border-radius:8px;
+        font-weight:bold;
+        font-size:12px;
+        box-shadow:0 2px 8px #0008;
+      }
+
+      #wl-mobile-controls {
+        position:fixed;
+        bottom:14px;
+        left:0;
+        right:0;
+        z-index:9997;
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-end;
+        padding:0 14px;
+        pointer-events:none;
+        user-select:none;
+      }
+
+      .wl-control-group {
+        display:flex;
+        gap:8px;
+        align-items:flex-end;
+        pointer-events:auto;
+      }
+
+      .wl-control-btn {
+        width:54px;
+        height:54px;
+        border-radius:50%;
+        border:2px solid #e5c47d;
+        background:#28233de8;
+        color:white;
+        font-size:20px;
+        font-weight:bold;
+        touch-action:none;
+        box-shadow:0 3px 8px #0008;
+      }
+
+      .wl-control-btn:active {
+        background:#80613a;
+        transform:scale(.94);
+      }
+
+      #wl-weather-layer {
+        position:fixed;
+        inset:0;
+        pointer-events:none;
+        z-index:5;
+        overflow:hidden;
+      }
+
+      .wl-weather-particle {
+        position:absolute;
+        top:-15px;
+        width:3px;
+        height:12px;
+        background:#c9eaff99;
+        border-radius:4px;
+        animation:wl-fall 1.5s linear infinite;
+      }
+
+      @keyframes wl-fall {
+        to { transform:translateY(110vh) translateX(35px); }
+      }
+
+      @media (max-width:600px) {
+        .wl-menu-btn {
+          font-size:10px;
+          padding:7px 8px;
+        }
+        .wl-control-btn {
+          width:48px;
+          height:48px;
+        }
+      }
+
+      @media (orientation:landscape) {
+        #wl-mobile-controls {
+          bottom:8px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  },
+
+  addQuickMenu() {
+    if (document.getElementById("wl-final-menu")) return;
+
+    const menu = document.createElement("div");
+    menu.id = "wl-final-menu";
+
+    const buttons = [
+      ["Bản đồ", () => this.openMap()],
+      ["Nhiệm vụ", () => this.openQuests()],
+      ["Túi đồ", () => this.openInventory()],
+      ["Kỹ năng", () => this.openSkills()],
+      ["Chế tạo", () => this.openCrafting()],
+      ["Lưu game", () => this.save()],
+      ["Toàn màn hình", () => this.fullscreen()],
+      ["Tạm dừng", () => this.pause()]
+    ];
+
+    buttons.forEach(([label, action]) => {
+      const button = document.createElement("button");
+      button.className = "wl-menu-btn";
+      button.textContent = label;
+      button.addEventListener("click", action);
+      menu.appendChild(button);
+    });
+
+    document.body.appendChild(menu);
+  },
+
+  addMobileControls() {
+    if (document.getElementById("wl-mobile-controls")) return;
+
+    const panel = document.createElement("div");
+    panel.id = "wl-mobile-controls";
+
+    const leftGroup = document.createElement("div");
+    leftGroup.className = "wl-control-group";
+
+    const rightGroup = document.createElement("div");
+    rightGroup.className = "wl-control-group";
+
+    const makeButton = (symbol, key, group) => {
+      const button = document.createElement("button");
+      button.className = "wl-control-btn";
+      button.textContent = symbol;
+      button.setAttribute("aria-label", key);
+
+      const setKey = (value) => {
+        if (!window.game) return;
+        if (!game.keys) game.keys = {};
+        game.keys[key] = value;
+      };
+
+      button.addEventListener("pointerdown", e => {
+        e.preventDefault();
+        setKey(true);
+        button.setPointerCapture?.(e.pointerId);
+      });
+
+      const release = e => {
+        e.preventDefault();
+        setKey(false);
+      };
+
+      button.addEventListener("pointerup", release);
+      button.addEventListener("pointercancel", release);
+      button.addEventListener("lostpointercapture", () => setKey(false));
+
+      group.appendChild(button);
+    };
+
+    makeButton("◀", "left", leftGroup);
+    makeButton("▶", "right", leftGroup);
+
+    makeButton("⬆", "up", rightGroup);
+    makeButton("⚔", "attack", rightGroup);
+    makeButton("✦", "skill", rightGroup);
+    makeButton("➤", "dodge", rightGroup);
+
+    panel.appendChild(leftGroup);
+    panel.appendChild(rightGroup);
+    document.body.appendChild(panel);
+  },
+
+  openMap() {
+    if (window.WORLD_SYSTEM?.renderMap) {
+      WORLD_SYSTEM.renderMap();
+    } else if (window.WORLD_SYSTEM?.openMap) {
+      WORLD_SYSTEM.openMap();
+    } else {
+      notify?.("Bản đồ chưa được kết nối.");
+    }
+  },
+
+  openQuests() {
+    if (window.QUEST_SYSTEM?.renderQuestLog) {
+      QUEST_SYSTEM.renderQuestLog();
+    } else {
+      notify?.("Nhật ký nhiệm vụ chưa sẵn sàng.");
+    }
+  },
+
+  openInventory() {
+    if (window.openEquipmentInventory) {
+      openEquipmentInventory();
+    } else if (window.openInventory) {
+      openInventory();
+    } else {
+      notify?.("Túi đồ chưa sẵn sàng.");
+    }
+  },
+
+  openSkills() {
+    if (window.openSkillTree) {
+      openSkillTree();
+    } else {
+      notify?.("Cây kỹ năng chưa sẵn sàng.");
+    }
+  },
+
+  openCrafting() {
+    if (window.CRAFTING_SYSTEM?.openCrafting) {
+      CRAFTING_SYSTEM.openCrafting();
+    } else if (window.CRAFTING_SYSTEM?.renderCrafting) {
+      CRAFTING_SYSTEM.renderCrafting();
+    } else {
+      notify?.("Hệ thống chế tạo chưa có giao diện mở nhanh.");
+    }
+  },
+
+  save() {
+    try {
+      if (window.GAME_SYSTEM?.saveSlot) {
+        GAME_SYSTEM.saveSlot(1);
+        notify?.("Đã lưu vào ô lưu số 1.");
+      } else if (window.saveGame) {
+        saveGame();
+        notify?.("Đã lưu trò chơi.");
+      } else {
+        notify?.("Chưa tìm thấy hệ thống lưu game.");
+      }
+    } catch (error) {
+      console.error(error);
+      notify?.("Lưu game không thành công.");
+    }
+  },
+
+  pause() {
+    if (window.openPauseMenu) {
+      openPauseMenu();
+    } else if (window.pauseGame) {
+      pauseGame();
+    }
+  },
+
+  fullscreen() {
+    if (window.fullScreen) {
+      fullScreen();
+      return;
+    }
+
+    const target = document.documentElement;
+    if (target.requestFullscreen) {
+      target.requestFullscreen().catch(() => {});
+    }
+  },
+
+  playSound(type = "hit") {
+    try {
+      if (window.game?.soundOn === false) return;
+
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) return;
+
+      if (!this.audio) this.audio = new AudioContextClass();
+
+      if (this.audio.state === "suspended") {
+        this.audio.resume();
+      }
+
+      const oscillator = this.audio.createOscillator();
+      const gain = this.audio.createGain();
+
+      const sounds = {
+        hit: [180, 90],
+        jump: [280, 420],
+        level: [440, 700],
+        coin: [700, 950],
+        magic: [350, 620],
+        boss: [100, 55]
+      };
+
+      const frequencies = sounds[type] || sounds.hit;
+      const now = this.audio.currentTime;
+
+      oscillator.type = "square";
+      oscillator.frequency.setValueAtTime(frequencies[0], now);
+      oscillator.frequency.exponentialRampToValueAtTime(
+        Math.max(30, frequencies[1]),
+        now + 0.12
+      );
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      oscillator.connect(gain);
+      gain.connect(this.audio.destination);
+
+      oscillator.start(now);
+      oscillator.stop(now + 0.16);
+    } catch (error) {
+      console.warn("Audio unavailable", error);
+    }
+  },
+
+  connectSystems() {
+    if (window.game) {
+      if (!game.keys) game.keys = {};
+      if (!game.progress) game.progress = {};
+    }
+
+    const oldUpdate = window.updateWorld;
+
+    if (typeof oldUpdate === "function" &&
+        !oldUpdate._wonderlandFinalWrapped) {
+
+      const wrappedUpdate = function(...args) {
+        const result = oldUpdate.apply(this, args);
+
+        const now = performance.now();
+        const delta = Math.min(0.05, Math.max(0, (now - WONDERLAND_FINAL.lastTick) / 1000));
+        WONDERLAND_FINAL.lastTick = now;
+
+        if (window.GAME_SYSTEM?.updateWorldTime) {
+          GAME_SYSTEM.updateWorldTime(delta);
+        }
+
+        if (window.CRAFTING_SYSTEM?.updateMining) {
+          CRAFTING_SYSTEM.updateMining(delta);
+        }
+
+        if (window.CRAFTING_SYSTEM?.updateBuffs) {
+          CRAFTING_SYSTEM.updateBuffs();
+        }
+
+        return result;
+      };
+
+      wrappedUpdate._wonderlandFinalWrapped = true;
+      window.updateWorld = wrappedUpdate;
+    }
+
+    const oldBossDefeat = window.defeatBoss;
+
+    if (typeof oldBossDefeat === "function" &&
+        !oldBossDefeat._wonderlandFinalWrapped) {
+
+      const wrappedBossDefeat = function(...args) {
+        const result = oldBossDefeat.apply(this, args);
+        window.completeWonderlandStage?.();
+        WONDERLAND_FINAL.playSound("boss");
+        return result;
+      };
+
+      wrappedBossDefeat._wonderlandFinalWrapped = true;
+      window.defeatBoss = wrappedBossDefeat;
+    }
+
+    const oldLevelUp = window.checkLevelUp;
+
+    if (typeof oldLevelUp === "function" &&
+        !oldLevelUp._wonderlandFinalWrapped) {
+
+      const wrappedLevelUp = function(...args) {
+        const result = oldLevelUp.apply(this, args);
+        WONDERLAND_FINAL.playSound("level");
+        return result;
+      };
+
+      wrappedLevelUp._wonderlandFinalWrapped = true;
+      window.checkLevelUp = wrappedLevelUp;
+    }
+  },
+
+  startWeatherEffects() {
+    if (document.getElementById("wl-weather-layer")) return;
+
+    const layer = document.createElement("div");
+    layer.id = "wl-weather-layer";
+    document.body.appendChild(layer);
+
+    this.weatherLayer = layer;
+  },
+
+  setWeather(type) {
+    if (!this.weatherLayer) return;
+
+    this.weatherLayer.innerHTML = "";
+
+    if (type !== "rain" && type !== "snow") return;
+
+    for (let i = 0; i < 28; i++) {
+      const particle = document.createElement("div");
+      particle.className = "wl-weather-particle";
+
+      particle.style.left = Math.random() * 100 + "%";
+      particle.style.animationDelay = Math.random() * 2 + "s";
+      particle.style.animationDuration =
+        (1 + Math.random() * 1.5) + "s";
+
+      if (type === "snow") {
+        particle.style.width = "6px";
+        particle.style.height = "6px";
+        particle.style.borderRadius = "50%";
+        particle.style.background = "#ffffffcc";
+      }
+
+      this.weatherLayer.appendChild(particle);
+    }
+  }
+};
+
+/* Hoàn thành màn chơi sau khi hệ thống chiến đấu xác nhận */
+window.completeWonderlandStage = function() {
+  if (!window.WORLD_SYSTEM || !window.game) return false;
+
+  const stageId = game.currentStage || game.stageId || 1;
+  const difficulty = game.currentDifficulty || 0;
+  const key = stageId + "_" + difficulty;
+
+  if (WONDERLAND_FINAL.completedStages.has(key)) return false;
+
+  WONDERLAND_FINAL.completedStages.add(key);
+
+  if (WORLD_SYSTEM.clearStage) {
+    WORLD_SYSTEM.clearStage(stageId, difficulty);
+    notify?.("Đã hoàn thành màn chơi!");
+    WONDERLAND_FINAL.playSound("level");
+    return true;
+  }
+
+  return false;
+};
+
+/* Khởi tạo giao diện cuối */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    WONDERLAND_FINAL.init();
+  });
+} else {
+  WONDERLAND_FINAL.init();
+}
+
+/* Lệnh kiểm tra nhanh trong trình duyệt */
+window.WONDERLAND_FINAL = WONDERLAND_FINAL;
+
