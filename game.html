@@ -1,1 +1,400 @@
 
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>TRẮNG ĐEN — Chiến thuật</title>
+<style>
+:root{
+  --bg:#101827;--panel:#192538;--panel2:#22334b;--line:#354963;
+  --gold:#f2bd62;--cream:#e8dfc9;--cream2:#cfc3a7;
+  --white:#fffdf5;--black:#171d29;--muted:#a9b8ca;--green:#79d6a2;--red:#ff8585;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 0%,#243651 0,#101827 62%);color:#f7f4ed;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);touch-action:manipulation}
+button{font:inherit}
+.app{width:min(100%,560px);margin:0 auto;padding:15px 0 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#ffe2a2,#c88736);display:grid;place-items:center;color:#172033;font-size:22px;font-weight:1000;box-shadow:0 6px 18px #0005}
+h1{font-size:clamp(19px,5vw,25px);line-height:1.05;margin:0;letter-spacing:.8px}
+.subtitle{font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:4px}
+.top-actions{display:flex;gap:7px}
+.icon-btn{border:1px solid var(--line);background:#1c2a3e;color:#f5e9d3;border-radius:11px;padding:9px 11px;font-weight:700}
+.panel{background:linear-gradient(150deg,#1d2c42,#172337);border:1px solid #354761;border-radius:18px;padding:13px;box-shadow:0 12px 30px #0003}
+.scorebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px}
+.player{display:flex;align-items:center;gap:9px;min-width:0}
+.player.right{justify-content:flex-end;text-align:right}
+.token{width:32px;height:32px;border-radius:50%;flex:0 0 32px;box-shadow:inset 0 2px 3px #fff8,0 3px 6px #0007}
+.token.white{background:radial-gradient(circle at 35% 28%,#fff,#d9d4c8 75%);border:2px solid #fff}
+.token.black{background:radial-gradient(circle at 35% 28%,#697080,#171d29 72%);border:2px solid #8790a0}
+.player-name{font-weight:850;font-size:13px}
+.player-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.vs{font-size:10px;color:#91a2b8;font-weight:900;letter-spacing:1px}
+.turn-pill{margin:0 auto 12px;display:flex;align-items:center;justify-content:center;gap:8px;background:#0f1928;border:1px solid #34465e;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:800}
+.turn-dot{width:10px;height:10px;border-radius:50%;background:var(--white);box-shadow:0 0 0 3px #ffffff20}
+.turn-dot.dark{background:#818b9c}
+.board-wrap{position:relative;width:min(100%,460px);margin:0 auto;padding:10px;border-radius:15px;background:linear-gradient(145deg,#b68b54,#74502e);box-shadow:inset 0 2px 3px #fff5,0 9px 22px #0006}
+.board{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(9,minmax(0,1fr));gap:5px;width:100%;aspect-ratio:8/9;background:#8b6946;border-radius:7px;overflow:visible}
+.cell{position:relative;min-width:0;min-height:0;border:0;border-radius:5px;background:linear-gradient(145deg,#eee5d0,#d6c8aa);box-shadow:inset 0 1px 2px #fff9,inset 0 -2px 2px #8c795b55;padding:0;display:grid;place-items:center}
+.cell:focus-visible{outline:3px solid var(--gold);z-index:3}
+.cell.goal-top{background:linear-gradient(145deg,#d8e6f0,#aebfd0)}
+.cell.goal-bottom{background:linear-gradient(145deg,#f4dcae,#d7b77e)}
+.cell.selected{box-shadow:inset 0 0 0 3px #3fba84,inset 0 1px 2px #fff9}
+.cell.valid::after{content:"";width:22%;height:22%;border-radius:50%;background:#338e68;opacity:.75}
+.pawn{width:66%;height:66%;border-radius:50%;position:relative;z-index:2;box-shadow:inset 0 3px 4px #fff8,0 4px 6px #0006;pointer-events:none}
+.pawn.white{background:radial-gradient(circle at 32% 25%,#fff,#e8e4d8 62%,#aaa394);border:2px solid #fff}
+.pawn.black{background:radial-gradient(circle at 32% 25%,#697384,#202838 70%);border:2px solid #7e899b}
+.wall{position:absolute;z-index:5;background:linear-gradient(180deg,#ffd98d,#bd762c);border:1px solid #75441c;border-radius:4px;box-shadow:0 2px 4px #24180d99;pointer-events:none}
+.wall.horizontal{height:9px}
+.wall.vertical{width:9px}
+.board-labels{display:flex;justify-content:space-between;color:#f4d8a7;font-size:10px;font-weight:800;letter-spacing:1px;padding:7px 3px 0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.stat{background:#111d2d;border:1px solid #33465f;border-radius:12px;padding:10px 11px;display:flex;align-items:center;justify-content:space-between}
+.stat-label{font-size:11px;color:var(--muted)}
+.bricks{display:flex;gap:4px;align-items:center}
+.brick{width:12px;height:7px;border-radius:2px;background:linear-gradient(#ffd58a,#b87932);border:1px solid #87531e}
+.brick.used{opacity:.18;filter:grayscale(1)}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.action{border:1px solid #455a75;border-radius:12px;padding:12px 9px;background:linear-gradient(145deg,#2b405b,#1c2b40);color:#f8f1e5;font-weight:800;font-size:13px}
+.action.active{border-color:#f2bd62;background:linear-gradient(145deg,#f4c978,#c98a3e);color:#24202a;box-shadow:0 3px 12px #d59b4a44}
+.action:disabled{opacity:.4}
+.directions{display:flex;gap:8px;margin-top:8px}
+.direction{flex:1;border:1px solid #40546d;background:#142136;color:#dce6f2;border-radius:10px;padding:9px;font-size:12px;font-weight:750}
+.direction.active{border-color:#e5b665;color:#ffd88f;background:#44351f}
+.message{min-height:42px;margin-top:11px;border-radius:12px;background:#101b2b;border:1px solid #30435d;padding:11px;text-align:center;font-size:12px;color:#e7d5b4;display:flex;align-items:center;justify-content:center}
+.bottom-actions{display:flex;gap:8px;margin-top:10px}
+.bottom-actions button{flex:1}
+.secondary{border:1px solid #3b506a;background:#19283c;color:#cbd7e5;border-radius:11px;padding:10px;font-size:12px;font-weight:750}
+.help{font-size:11px;line-height:1.55;color:#9fb0c4;text-align:center;margin:12px 8px 0}
+.overlay{position:fixed;inset:0;background:#070d16cc;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+.overlay.show{display:flex}
+.dialog{width:min(100%,390px);background:#1b2a40;border:1px solid #52647c;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 60px #0009}
+.dialog h2{margin:0 0 8px;color:#ffda9a}
+.dialog p{color:#c4d0df;font-size:13px;line-height:1.55}
+.dialog button{width:100%;margin-top:8px}
+@media(max-width:370px){.panel{padding:9px}.board-wrap{padding:7px}.board{gap:4px}.player-name{font-size:12px}.action{font-size:12px;padding:11px 5px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">⚔</div>
+      <div><h1>TRẮNG ĐEN</h1><div class="subtitle">CHIẾN THUẬT ĐỐI ĐẦU</div></div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundBtn" aria-label="Bật tắt âm thanh">♫ Bật</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="scorebar">
+      <div class="player">
+        <div class="token white"></div>
+        <div><div class="player-name">TRẮNG</div><div class="player-sub">Đích: hàng trên</div></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="player right">
+        <div><div class="player-name">ĐEN</div><div class="player-sub">Đích: hàng dưới</div></div>
+        <div class="token black"></div>
+      </div>
+    </div>
+
+    <div class="turn-pill"><span class="turn-dot" id="turnDot"></span><span id="turnText">Đến lượt Trắng</span></div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" aria-label="Bàn cờ 8 cột 9 hàng"></div>
+      <div class="board-labels"><span>ĐÍCH TRẮNG ↑</span><span>↓ ĐÍCH ĐEN</span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div><div class="stat-label">Gạch Trắng</div><b id="whiteCount">5 / 5</b></div><div class="bricks" id="whiteBricks"></div></div>
+      <div class="stat"><div><div class="stat-label">Gạch Đen</div><b id="blackCount">5 / 5</b></div><div class="bricks" id="blackBricks"></div></div>
+    </div>
+
+    <div class="controls">
+      <button class="action active" id="moveMode">↗ Di chuyển</button>
+      <button class="action" id="wallMode">▰ Đặt gạch</button>
+    </div>
+    <div class="directions" id="directions">
+      <button class="direction active" id="horizontal">Gạch ngang</button>
+      <button class="direction" id="vertical">Gạch dọc</button>
+    </div>
+    <div class="message" id="message" aria-live="polite">Trắng đi trước. Chọn một ô liền kề để di chuyển.</div>
+    <div class="bottom-actions">
+      <button class="secondary" id="restart">⟳ Chơi lại</button>
+      <button class="secondary" id="rules">ⓘ Luật chơi</button>
+      <button class="secondary" id="fullscreen">⛶ Toàn màn hình</button>
+    </div>
+  </section>
+  <p class="help">Chạm vào ô để di chuyển. Khi đặt gạch, chọn ô làm điểm bắt đầu của thanh gạch. Hai người thay phiên nhau trên cùng thiết bị.</p>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <h2 id="dialogTitle">Trắng chiến thắng!</h2>
+    <p id="dialogText">Chúc mừng người chiến thắng.</p>
+    <button class="action active" id="playAgain">Chơi ván mới</button>
+    <button class="secondary" id="closeDialog">Đóng</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const ROWS=9,COLS=8,MAX_WALLS=5;
+const $=id=>document.getElementById(id);
+const board=$("board");
+let players,turn,mode,direction,walls,blocked,gameOver,soundOn,audioCtx;
+let legalTargets=new Set();
+
+function init(){
+  players=[
+    {r:8,c:3,name:"Trắng",walls:MAX_WALLS,goal:0},
+    {r:0,c:3,name:"Đen",walls:MAX_WALLS,goal:8}
+  ];
+  turn=0;mode="move";direction="H";walls=[];blocked=new Set();gameOver=false;
+  legalTargets.clear();$("overlay").classList.remove("show");
+  render();
+  say("Trắng đi trước. Chọn một ô liền kề để di chuyển.");
+}
+function edgeKey(a,b){
+  const x=a.r*COLS+a.c,y=b.r*COLS+b.c;
+  return x<y?x+"-"+y:y+"-"+x;
+}
+function isBlocked(a,b){return blocked.has(edgeKey(a,b));}
+function inside(r,c){return r>=0&&r<ROWS&&c>=0&&c<COLS;}
+function otherPlayer(){return players[1-turn];}
+function movementOptions(index){
+  const p=players[index],enemy=players[1-index],out=[];
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(const [dr,dc] of dirs){
+    const r=p.r+dr,c=p.c+dc;
+    if(!inside(r,c)||isBlocked(p,{r,c}))continue;
+    if(r===enemy.r&&c===enemy.c){
+      // Nhảy chỉ theo chiều dọc; không có nhảy ngang hoặc nhảy chéo.
+      if(dc!==0)continue;
+      const jr=enemy.r+dr,jc=enemy.c;
+      if(inside(jr,jc)&&!(jr===p.r&&jc===p.c)&&!isBlocked(enemy,{r:jr,c:jc})&&
+         !(players[1-index].r===jr&&players[1-index].c===jc)){
+        out.push({r:jr,c:jc,jump:true});
+      }
+      continue;
+    }
+    out.push({r,c,jump:false});
+  }
+  return out;
+}
+function canReach(playerIndex){
+  const p=players[playerIndex],goal=p.goal,queue=[[p.r,p.c]],seen=new Set([p.r+","+p.c]);
+  while(queue.length){
+    const [r,c]=queue.shift();
+    if(r===goal)return true;
+    for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nr=r+dr,nc=c+dc,key=nr+","+nc;
+      if(!inside(nr,nc)||seen.has(key)||isBlocked({r,c},{r:nr,c:nc}))continue;
+      seen.add(key);queue.push([nr,nc]);
+    }
+  }
+  return false;
+}
+function wallEdges(r,c,d){
+  if(d==="H"){
+    // Gạch ngang chặn hai cạnh đi lên/xuống giữa hai hàng.
+    return [
+      [{r,c},{r:r+1,c}],
+      [{r,c:c+1},{r:r+1,c:c+1}]
+    ];
+  }
+  // Gạch dọc chặn hai cạnh đi trái/phải giữa hai cột.
+  return [
+    [{r,c},{r,c:c+1}],
+    [{r:r+1,c},{r:r+1,c:c+1}]
+  ];
+}
+function wallFits(r,c,d){
+  if(r<0||r>=ROWS-1||c<0||c>=COLS-1)return false;
+  const candidate=wallEdges(r,c,d),keys=candidate.map(e=>edgeKey(e[0],e[1]));
+  if(keys.some(k=>blocked.has(k)))return false;
+  // Không cho hai thanh gạch giao nhau tại cùng một điểm.
+  if(walls.some(w=>w.r===r&&w.c===c))return false;
+  // Cấm đặt chồng hoặc cắt ngang thanh gạch đã có.
+  for(const w of walls){
+    if(w.d===d){
+      if(d==="H"&&w.r===r&&Math.abs(w.c-c)<=1)return false;
+      if(d==="V"&&w.c===c&&Math.abs(w.r-r)<=1)return false;
+    }else{
+      if(Math.abs(w.r-r)<=1&&Math.abs(w.c-c)<=1)return false;
+    }
+  }
+  keys.forEach(k=>blocked.add(k));
+  const reachable=canReach(0)&&canReach(1);
+  keys.forEach(k=>blocked.delete(k));
+  return reachable;
+}
+function render(){
+  board.innerHTML="";
+  legalTargets.clear();
+  if(mode==="move"&&!gameOver){
+    movementOptions(turn).forEach(o=>legalTargets.add(o.r+","+o.c));
+  }
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell=document.createElement("button");
+      cell.type="button";cell.className="cell";
+      if(r===0)cell.classList.add("goal-top");
+      if(r===ROWS-1)cell.classList.add("goal-bottom");
+      if(legalTargets.has(r+","+c))cell.classList.add("valid");
+      cell.setAttribute("aria-label","Hàng "+(r+1)+", cột "+(c+1));
+      cell.addEventListener("click",()=>onCell(r,c));
+      players.forEach((p,i)=>{
+        if(p.r===r&&p.c===c){
+          const pawn=document.createElement("span");
+          pawn.className="pawn "+(i===0?"white":"black");
+          cell.appendChild(pawn);
+        }
+      });
+      board.appendChild(cell);
+    }
+  }
+  walls.forEach(w=>{
+    const el=document.createElement("div");
+    el.className="wall "+(w.d==="H"?"horizontal":"vertical");
+    const rect=board.getBoundingClientRect();
+    const gap=parseFloat(getComputedStyle(board).gap)||5;
+    const cw=(rect.width-gap*(COLS-1))/COLS;
+    const ch=(rect.height-gap*(ROWS-1))/ROWS;
+    if(w.d==="H"){
+      el.style.left=(w.c*(cw+gap))+"px";
+      el.style.top=((w.r+1)*ch+w.r*gap+gap/2-4.5)+"px";
+      el.style.width=(2*cw+gap)+"px";
+    }else{
+      el.style.left=((w.c+1)*cw+w.c*gap+gap/2-4.5)+"px";
+      el.style.top=(w.r*(ch+gap))+"px";
+      el.style.height=(2*ch+gap)+"px";
+    }
+    board.appendChild(el);
+  });
+  $("turnText").textContent=gameOver?"Ván đấu kết thúc":"Đến lượt "+players[turn].name;
+  $("turnDot").classList.toggle("dark",turn===1);
+  $("whiteCount").textContent=players[0].walls+" / 5";
+  $("blackCount").textContent=players[1].walls+" / 5";
+  drawBricks("whiteBricks",players[0].walls);
+  drawBricks("blackBricks",players[1].walls);
+  $("moveMode").classList.toggle("active",mode==="move");
+  $("wallMode").classList.toggle("active",mode==="wall");
+  $("horizontal").classList.toggle("active",direction==="H");
+  $("vertical").classList.toggle("active",direction==="V");
+  $("directions").style.opacity=mode==="wall"?"1":".62";
+}
+function drawBricks(id,count){
+  const box=$(id);box.innerHTML="";
+  for(let i=0;i<MAX_WALLS;i++){
+    const b=document.createElement("span");
+    b.className="brick"+(i>=count?" used":"");
+    box.appendChild(b);
+  }
+}
+function say(text){$("message").textContent=text;}
+function onCell(r,c){
+  if(gameOver)return;
+  if(mode==="move")moveTo(r,c);
+  else addWall(r,c);
+}
+function moveTo(r,c){
+  const options=movementOptions(turn),target=options.find(o=>o.r===r&&o.c===c);
+  if(!target){say("Nước đi không hợp lệ. Chọn ô sáng màu liền kề hoặc nước nhảy hợp lệ.");return;}
+  const p=players[turn];
+  p.r=r;p.c=c;
+  playSound("move");
+  if(p.r===p.goal){
+    gameOver=true;render();say("🏆 "+p.name+" chiến thắng!");
+    $("dialogTitle").textContent=p.name+" chiến thắng!";
+    $("dialogText").textContent="Bạn đã đến hàng đích của đối phương. Chơi một ván mới nhé!";
+    $("overlay").classList.add("show");playSound("win");return;
+  }
+  nextTurn();
+}
+function addWall(r,c){
+  const p=players[turn];
+  if(p.walls<=0){say("Bạn đã dùng hết 5 thanh gạch.");return;}
+  if(!wallFits(r,c,direction)){
+    say("Không thể đặt gạch ở đây: vị trí bị trùng, giao nhau hoặc chặn hết đường đến đích.");
+    playSound("bad");return;
+  }
+  const edges=wallEdges(r,c,direction),keys=edges.map(e=>edgeKey(e[0],e[1]));
+  keys.forEach(k=>blocked.add(k));
+  walls.push({r,c,d:direction});
+  p.walls--;
+  playSound("wall");
+  nextTurn();
+}
+function nextTurn(){
+  turn=1-turn;mode="move";render();
+  say("Đến lượt "+players[turn].name+". Chọn di chuyển hoặc đặt gạch.");
+}
+function setMode(m){
+  if(gameOver)return;
+  mode=m;render();
+  say(m==="move"?"Chọn ô sáng màu để di chuyển.":"Chọn hướng gạch rồi chạm ô bắt đầu đặt gạch.");
+}
+function setDirection(d){
+  if(gameOver)return;
+  direction=d;mode="wall";render();
+  say(d==="H"?"Đang chọn gạch ngang dài 2 ô.":"Đang chọn gạch dọc dài 2 ô.");
+}
+function playSound(type){
+  if(!soundOn)return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended")audioCtx.resume();
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    const now=audioCtx.currentTime;
+    const freq=type==="win"?660:type==="wall"?240:type==="bad"?130:420;
+    osc.frequency.setValueAtTime(freq,now);
+    if(type==="win")osc.frequency.exponentialRampToValueAtTime(990,now+.22);
+    gain.gain.setValueAtTime(.0001,now);
+    gain.gain.exponentialRampToValueAtTime(type==="win"?.12:.055,now+.015);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+(type==="win"?.35:.11));
+    osc.start(now);osc.stop(now+(type==="win"?.36:.12));
+  }catch(e){}
+}
+$("moveMode").addEventListener("click",()=>setMode("move"));
+$("wallMode").addEventListener("click",()=>setMode("wall"));
+$("horizontal").addEventListener("click",()=>setDirection("H"));
+$("vertical").addEventListener("click",()=>setDirection("V"));
+$("restart").addEventListener("click",()=>{
+  if(confirm("Bạn có muốn chơi lại từ đầu không?"))init();
+});
+$("rules").addEventListener("click",()=>{
+  $("dialogTitle").textContent="LUẬT CHƠI";
+  $("dialogText").innerHTML="• Bàn cờ có 8 cột × 9 hàng. Trắng đi trước.<br>• Mỗi lượt: đi 1 ô theo 4 hướng hoặc đặt 1 gạch.<br>• Mỗi người có 5 gạch dài 2 ô, đặt ngang hoặc dọc; đặt gạch sẽ mất lượt di chuyển.<br>• Không được đi chéo. Được đi lùi và đặt gạch sát quân.<br>• Không được chặn hết mọi đường đến đích của bất kỳ người chơi nào.<br>• Khi hai quân đứng đối diện theo chiều dọc, có thể nhảy thẳng qua quân kia nếu ô phía sau trống và không bị gạch chắn. Không nhảy ngang hay chéo.<br>• Chạm hàng cuối sân đối phương là thắng.";
+  $("playAgain").style.display="none";$("overlay").classList.add("show");
+});
+function closeDialog(){
+  $("overlay").classList.remove("show");$("playAgain").style.display="";
+}
+$("closeDialog").addEventListener("click",closeDialog);
+$("playAgain").addEventListener("click",init);
+$("soundBtn").addEventListener("click",()=>{
+  soundOn=!soundOn;$("soundBtn").textContent=soundOn?"♫ Bật":"♫ Tắt";
+  if(soundOn)playSound("move");
+});
+$("fullscreen").addEventListener("click",async()=>{
+  try{
+    if(!document.fullscreenElement)await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(e){say("Trình duyệt chưa hỗ trợ chế độ toàn màn hình.");}
+});
+window.addEventListener("resize",()=>{if(!gameOver)render();});
+soundOn=true;
+init();
+})();
+</script>
+</body>
+</html>
