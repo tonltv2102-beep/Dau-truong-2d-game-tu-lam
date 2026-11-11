@@ -3,490 +3,139 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Đấu Trường | Hoang Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đấu Trường Bàn Cờ</title>
 <style>
 *{box-sizing:border-box}
 body{
- margin:0;padding:14px;background:#101827;color:#fff;
- font-family:Arial,sans-serif;text-align:center
+ margin:0;background:#172333;color:white;
+ font-family:Arial;text-align:center;padding:12px;
 }
-h1{color:#f5c65b;margin:8px 0}
-.sub{color:#9eafc5;font-size:12px}
-.panel{
- max-width:520px;margin:12px auto;padding:12px;
- background:#202d40;border:1px solid #35465e;
- border-radius:13px
-}
-.stats{display:flex;justify-content:space-around;gap:8px}
-.stat{font-size:14px;line-height:1.8}
-#turn{color:#f5cf70;font-weight:bold}
+h2{margin:8px}
+.info{font-size:17px;margin:12px}
 #board{
- width:min(94vw,460px);
- aspect-ratio:8/9;
- margin:18px auto;
- padding:7px;
  display:grid;
- grid-template-columns:repeat(8,minmax(0,1fr));
- grid-template-rows:repeat(9,minmax(0,1fr));
- gap:5px;
- background:#293951;
- border-radius:12px;
+ grid-template-columns:repeat(9,1fr);
+ gap:3px;
+ width:min(94vw,480px);
+ aspect-ratio:1;
+ margin:15px auto;
+ background:#34495e;padding:5px;border-radius:10px;
 }
 .cell{
- position:relative;min-width:0;min-height:0;
- padding:0;border-radius:5px;
- border:1px solid #b9c4d1;
- background:#e5eaf0;color:#263449;
- font-size:clamp(8px,2.3vw,12px);
- font-weight:bold;
- display:flex;align-items:center;justify-content:center;
-}
-.cell.goal-black{background:#f3e3c2}
-.cell.goal-white{background:#d8e8ff}
-.cell.white{background:white;border:3px solid #e4ae3b}
-.cell.black{background:#273348;color:white;border:3px solid #e4ae3b}
-.cell.legal{background:#9be2a9;border:2px solid #26994c}
-.cell.selected{outline:3px solid #24baff;outline-offset:-3px}
-.wall{
- position:absolute;z-index:5;
- background:#e6a13b;
- border:1px solid #754817;
+ background:#e8d5ae;
+ border:1px solid #b79d70;
  border-radius:4px;
- pointer-events:none;
+ position:relative;
+ display:flex;align-items:center;justify-content:center;
+ min-width:0;
 }
-.wall.horizontal{
- height:9px;width:calc(200% + 5px);
- left:0;bottom:-6px;
+.cell.selected{background:#76d7c4}
+.cell.move{background:#b9e6a0}
+.piece{
+ width:72%;height:72%;border-radius:50%;
+ border:3px solid #333;
+ box-shadow:0 2px 5px #3338;
 }
-.wall.vertical{
- width:9px;height:calc(200% + 5px);
- right:-6px;top:0;
+.white{background:#fff}
+.black{background:#202020;border-color:#aaa}
+.wall{
+ position:absolute;
+ background:#9b542b;
+ z-index:3;
+ border:2px solid #633719;
 }
-button.control{
- border:1px solid #526783;border-radius:9px;
- padding:11px 13px;margin:4px;
- background:#304663;color:white;
- font-size:13px;font-weight:bold;
+.wall.h{height:12px;width:100%;top:-7px}
+.wall.v{width:12px;height:100%;left:-7px}
+button{
+ padding:11px 18px;margin:5px;
+ border:0;border-radius:8px;
+ font-size:16px;font-weight:bold;
 }
-button.control.active{background:#e3aa43;color:#182235}
-button:disabled{opacity:.4}
-#message{min-height:35px;color:#f5cf70;font-weight:bold;font-size:14px}
-.small{font-size:12px;color:#b6c4d6;line-height:1.6}
 </style>
 </head>
 <body>
-
-<h1>⚔ ĐẤU TRƯỜNG</h1>
-<div class="sub">HOANG STUDIO · TWO PLAYER GAME</div>
-
-<div class="panel">
- <div id="turn">Trắng chọn vị trí xuất phát</div>
- <div class="stats">
-  <div class="stat">⚪ TRẮNG<br><b id="whiteWalls">5</b> gạch</div>
-  <div class="stat">⚫ ĐEN<br><b id="blackWalls">5</b> gạch</div>
- </div>
- <div id="message">Chọn một ô ở hàng cuối cho Trắng.</div>
-</div>
-
-<div class="small">ĐÍCH ĐEN ↑</div>
+<h2>⚔️ ĐẤU TRƯỜNG BÀN CỜ</h2>
+<div class="info" id="turn">Lượt: Trắng</div>
+<div class="info" id="status">Chọn quân cờ để di chuyển</div>
 <div id="board"></div>
-<div class="small">↓ ĐÍCH TRẮNG</div>
-
-<div class="panel">
- <b>ĐIỀU KHIỂN</b><br>
- <button class="control active" id="moveBtn">Di chuyển</button>
- <button class="control" id="hBtn">━ Gạch ngang</button>
- <button class="control" id="vBtn">┃ Gạch dọc</button>
- <br>
- <button class="control" id="confirmBtn">Xác nhận</button>
- <button class="control" id="cancelBtn">Hủy</button>
- <button class="control" id="restartBtn">↻ Chơi lại</button>
-</div>
-
-<div class="panel small">
- <b>LUẬT CHƠI</b>
- <p>• Bàn cờ 8 cột × 9 hàng.</p>
- <p>• Trắng xuất phát hàng 9, Đen xuất phát hàng 1.</p>
- <p>• Mỗi lượt di chuyển 1 ô ngang/dọc hoặc đặt 1 gạch.</p>
- <p>• Không được đi chéo.</p>
- <p>• Gạch dài 2 cạnh, mỗi người có 5 gạch.</p>
- <p>• Có thể đặt gạch sát quân đối thủ ở cả 4 phía.</p>
- <p>• Không được đặt gạch đè lên quân.</p>
- <p>• Không được chặn hết đường đến đích.</p>
-</div>
-
+<button onclick="mode='move';update()">Di chuyển</button>
+<button onclick="mode='wall';update()">Đặt gạch</button>
+<button onclick="reset()">Chơi lại</button>
 <script>
-(()=>{
-"use strict";
-
-const $=id=>document.getElementById(id);
-const board=$("board");
-
-let players=[null,null];
+const N=9;
+let pieces={white:{x:4,y:8},black:{x:4,y:0}};
 let walls=[];
-let stock=[5,5];
-let current=0;
-let mode="move";
-let selected=null;
-let stage=0;
-let winner=-1;
+let turn='white',mode='move',selected=null;
+let board=document.getElementById('board');
 
-const directions=[
- [1,0],[-1,0],[0,1],[0,-1]
-];
-
-function same(a,b){
- return a.r===b.r&&a.c===b.c;
-}
-
-// Kiểm tra cạnh có bị gạch chặn không
-function blocked(r,c,nr,nc){
- for(const w of walls){
-
-  // Gạch ngang: chặn hai cạnh đi lên/xuống
-  if(w.o==="H" && r!==nr &&
-     Math.min(r,nr)===w.r &&
-     (c===w.c||c===w.c+1)){
-   return true;
-  }
-
-  // Gạch dọc: chặn hai cạnh đi trái/phải
-  if(w.o==="V" && c!==nc &&
-     Math.min(c,nc)===w.c &&
-     (r===w.r||r===w.r+1)){
-   return true;
-  }
- }
+function blocked(x,y,nx,ny){
+ if(nx<0||ny<0||nx>=N||ny>=N)return true;
+ if(pieces.white.x===nx&&pieces.white.y===ny)return true;
+ if(pieces.black.x===nx&&pieces.black.y===ny)return true;
  return false;
 }
-
-// Tìm các ô có thể di chuyển
-function possibleMoves(player){
- const p=players[player];
- if(!p)return [];
-
- let other=players[1-player];
- let result=[];
-
- for(const [dr,dc] of directions){
-  let r=p.r+dr,c=p.c+dc;
-
-  if(r<0||r>8||c<0||c>7)continue;
-  if(blocked(p.r,p.c,r,c))continue;
-
-  // Nếu gặp quân đối thủ, thử nhảy thẳng qua
-  if(other&&other.r===r&&other.c===c){
-   let rr=r+dr,cc=c+dc;
-
-   if(rr>=0&&rr<=8&&cc>=0&&cc<=7&&
-      !blocked(r,c,rr,cc)){
-    result.push({r:rr,c:cc});
+function update(){
+ board.innerHTML='';
+ for(let y=0;y<N;y++){
+  for(let x=0;x<N;x++){
+   let c=document.createElement('div');
+   c.className='cell';
+   if(selected&&selected.x===x&&selected.y===y)c.classList.add('selected');
+   let p=Object.entries(pieces).find(([k,v])=>v.x===x&&v.y===y);
+   if(p){
+    let el=document.createElement('div');
+    el.className='piece '+(p[0]==='white'?'white':'black');
+    c.appendChild(el);
    }
-   continue;
-  }
-
-  result.push({r,c});
- }
-
- return result;
-}
-
-// Kiểm tra người chơi còn đường tới đích
-function hasPath(player){
- let start=players[player];
- if(!start)return true;
-
- let queue=[start];
- let visited=new Set([start.r+","+start.c]);
-
- while(queue.length){
-  let p=queue.shift();
-
-  if(player===0&&p.r===0)return true;
-  if(player===1&&p.r===8)return true;
-
-  for(const [dr,dc] of directions){
-   let r=p.r+dr,c=p.c+dc;
-   let k=r+","+c;
-
-   if(r<0||r>8||c<0||c>7)continue;
-   if(visited.has(k))continue;
-   if(blocked(p.r,p.c,r,c))continue;
-
-   visited.add(k);
-   queue.push({r,c});
+   if(walls.some(w=>w.x===x&&w.y===y)){
+    let el=document.createElement('div');
+    el.className='wall '+(walls.find(w=>w.x===x&&w.y===y).dir);
+    c.appendChild(el);
+   }
+   c.onclick=()=>clickCell(x,y);
+   board.appendChild(c);
   }
  }
-
- return false;
+ document.getElementById('turn').textContent='Lượt: '+(turn==='white'?'Trắng':'Đen');
 }
-
-// Kiểm tra vị trí đặt gạch
-function validWall(r,c,o){
- if(r<0||r>7||c<0||c>6)return false;
-
- for(const w of walls){
-
-  // Không cho hai gạch giao nhau
-  if(w.r===r&&w.c===c&&w.o!==o)return false;
-
-  // Không cho gạch cùng hướng chồng lên nhau
-  if(o==="H"&&w.o==="H"&&w.r===r&&Math.abs(w.c-c)<2)
-   return false;
-
-  if(o==="V"&&w.o==="V"&&w.c===c&&Math.abs(w.r-r)<2)
-   return false;
- }
-
- // Gạch nằm trên cạnh giữa các ô.
- // Vì vậy được phép sát quân, nhưng không thể đè lên quân.
- walls.push({r,c,o});
-
- const valid=hasPath(0)&&hasPath(1);
-
- walls.pop();
- return valid;
-}
-
-function render(){
- board.innerHTML="";
-
- for(let r=0;r<9;r++){
-  for(let c=0;c<8;c++){
-
-   const cell=document.createElement("button");
-   cell.className="cell";
-
-   if(r===0)cell.classList.add("goal-black");
-   if(r===8)cell.classList.add("goal-white");
-
-   const piece=players.findIndex(p=>p&&p.r===r&&p.c===c);
-
-   if(piece===0){
-    cell.classList.add("white");
-    cell.textContent="TRẮNG";
-   }else if(piece===1){
-    cell.classList.add("black");
-    cell.textContent="ĐEN";
-   }else if(stage===2&&mode==="move"){
-    if(possibleMoves(current).some(p=>p.r===r&&p.c===c)){
-     cell.classList.add("legal");
-     cell.textContent="●";
-    }
+function clickCell(x,y){
+ let own=pieces[turn];
+ if(mode==='move'){
+  if(!selected){
+   if(own.x===x&&own.y===y){
+    selected={x,y};
+    document.getElementById('status').textContent='Chọn ô kế tiếp';
    }
-
-   if(selected&&selected.r===r&&selected.c===c){
-    cell.classList.add("selected");
+  }else{
+   let dx=Math.abs(x-selected.x),dy=Math.abs(y-selected.y);
+   if(dx+dy===1&&!blocked(selected.x,selected.y,x,y)){
+    own.x=x;own.y=y;
+    next();
    }
-
-   // Hiển thị gạch ngang
-   const horizontal=walls.some(w=>
-    w.o==="H"&&w.r===r&&w.c===c
-   );
-
-   // Hiển thị gạch dọc
-   const vertical=walls.some(w=>
-    w.o==="V"&&w.r===r&&w.c===c
-   );
-
-   if(horizontal){
-    const span=document.createElement("span");
-    span.className="wall horizontal";
-    cell.appendChild(span);
-   }
-
-   if(vertical){
-    const span=document.createElement("span");
-    span.className="wall vertical";
-    cell.appendChild(span);
-   }
-
-   cell.addEventListener("click",()=>tap(r,c));
-   board.appendChild(cell);
+   selected=null;
   }
- }
-
- $("whiteWalls").textContent=stock[0];
- $("blackWalls").textContent=stock[1];
-
- if(winner!==-1){
-  $("turn").textContent="KẾT THÚC";
- }else if(stage===0){
-  $("turn").textContent="Trắng chọn vị trí xuất phát";
- }else if(stage===1){
-  $("turn").textContent="Đen chọn vị trí xuất phát";
  }else{
-  $("turn").textContent="Lượt "+(current===0?"⚪ Trắng":"⚫ Đen");
+  if(!walls.some(w=>w.x===x&&w.y===y)){
+   walls.push({x,y,dir:'h'});
+   next();
+  }
  }
-
- ["moveBtn","hBtn","vBtn"].forEach(id=>{
-  $(id).classList.toggle("active",
-   (id==="moveBtn"&&mode==="move")||
-   (id==="hBtn"&&mode==="H")||
-   (id==="vBtn"&&mode==="V")
-  );
- });
+ update();
 }
-
-// Xử lý chạm bàn cờ
-function tap(r,c){
- if(winner!==-1)return;
-
- // Chọn vị trí xuất phát
- if(stage<2){
-  if(stage===0&&r!==8)return;
-  if(stage===1&&r!==0)return;
-
-  selected={r,c};
-  $("message").textContent=
-   "Đã chọn cột "+(c+1)+". Nhấn Xác nhận.";
-  render();
-  return;
- }
-
- // Chế độ di chuyển
- if(mode==="move"){
-  const moves=possibleMoves(current);
-
-  if(!moves.some(p=>p.r===r&&p.c===c)){
-   $("message").textContent="Ô này không thể di chuyển tới.";
-   return;
-  }
-
-  players[current]={r,c};
-  selected=null;
-
-  if(current===0&&r===0){
-   winner=0;
-  }else if(current===1&&r===8){
-   winner=1;
-  }else{
-   current=1-current;
-  }
-
-  if(winner!==-1){
-   $("message").textContent=
-    (winner===0?"TRẮNG":"ĐEN")+" CHIẾN THẮNG!";
-  }else{
-   $("message").textContent="Di chuyển thành công!";
-  }
-
-  render();
-  return;
- }
-
- // Chế độ đặt gạch
- selected={r,c};
-
- if(r>7||c>6){
-  $("message").textContent="Vị trí không hợp lệ.";
- }else if(stock[current]<=0){
-  $("message").textContent="Bạn đã hết gạch.";
- }else if(validWall(r,c,mode)){
-  $("message").textContent=
-   "Vị trí hợp lệ. Nhấn Xác nhận để đặt gạch.";
- }else{
-  $("message").textContent=
-   "Không thể đặt gạch tại vị trí này.";
- }
-
- render();
+function next(){
+ turn=turn==='white'?'black':'white';
+ selected=null;
+ mode='move';
+ document.getElementById('status').textContent='Đến lượt '+(turn==='white'?'Trắng':'Đen');
 }
-
-// Xác nhận
-$("confirmBtn").onclick=()=>{
- if(winner!==-1||!selected)return;
-
- // Xác nhận vị trí bắt đầu
- if(stage<2){
-  if(stage===0){
-   players[0]={...selected};
-   stage=1;
-   $("message").textContent="Đến lượt Đen chọn vị trí xuất phát.";
-  }else{
-   players[1]={...selected};
-   stage=2;
-   current=0;
-   $("message").textContent="Bắt đầu trận đấu! Trắng đi trước.";
-  }
-
-  selected=null;
-  render();
-  return;
- }
-
- // Xác nhận đặt gạch
- if(mode==="move")return;
-
- if(stock[current]<=0){
-  $("message").textContent="Bạn đã hết gạch.";
-  return;
- }
-
- const {r,c}=selected;
-
- if(!validWall(r,c,mode)){
-  $("message").textContent="Vị trí đặt gạch không hợp lệ.";
-  return;
- }
-
- walls.push({r,c,o:mode});
- stock[current]--;
-
- selected=null;
- mode="move";
- current=1-current;
-
- $("message").textContent="Đặt gạch thành công!";
- render();
-};
-
-$("moveBtn").onclick=()=>{
- if(stage!==2||winner!==-1)return;
- mode="move";
- selected=null;
- render();
-};
-
-$("hBtn").onclick=()=>{
- if(stage!==2||winner!==-1)return;
- mode="H";
- selected=null;
- render();
- $("message").textContent="Chọn vị trí đặt gạch ngang.";
-};
-
-$("vBtn").onclick=()=>{
- if(stage!==2||winner!==-1)return;
- mode="V";
- selected=null;
- render();
- $("message").textContent="Chọn vị trí đặt gạch dọc.";
-};
-
-$("cancelBtn").onclick=()=>{
- selected=null;
- render();
- $("message").textContent="Đã hủy lựa chọn.";
-};
-
-$("restartBtn").onclick=()=>{
- players=[null,null];
- walls=[];
- stock=[5,5];
- current=0;
- mode="move";
- selected=null;
- stage=0;
- winner=-1;
- $("message").textContent="Chọn vị trí xuất phát cho Trắng.";
- render();
-};
-
-render();
-})();
+function reset(){
+ pieces={white:{x:4,y:8},black:{x:4,y:0}};
+ walls=[];turn='white';mode='move';selected=null;
+ document.getElementById('status').textContent='Chọn quân cờ để di chuyển';
+ update();
+}
+update();
 </script>
 </body>
 </html>
-
