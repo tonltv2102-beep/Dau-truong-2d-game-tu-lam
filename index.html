@@ -1,282 +1,491 @@
-!doctype html>
+
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hoang Studio</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Đấu Trường | Hoang Studio</title>
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{
+ margin:0;padding:14px;background:#101827;color:#fff;
+ font-family:Arial,sans-serif;text-align:center
 }
-body {
-  margin: 0;
-  color: #f4f6ff;
-  background: #080b18;
-  font-family: Arial, sans-serif;
+h1{color:#f5c65b;margin:8px 0}
+.sub{color:#9eafc5;font-size:12px}
+.panel{
+ max-width:520px;margin:12px auto;padding:12px;
+ background:#202d40;border:1px solid #35465e;
+ border-radius:13px
 }
-a {
-  color: inherit;
-  text-decoration: none;
+.stats{display:flex;justify-content:space-around;gap:8px}
+.stat{font-size:14px;line-height:1.8}
+#turn{color:#f5cf70;font-weight:bold}
+#board{
+ width:min(94vw,460px);
+ aspect-ratio:8/9;
+ margin:18px auto;
+ padding:7px;
+ display:grid;
+ grid-template-columns:repeat(8,minmax(0,1fr));
+ grid-template-rows:repeat(9,minmax(0,1fr));
+ gap:5px;
+ background:#293951;
+ border-radius:12px;
 }
-.wrap {
-  width: min(1080px, calc(100% - 36px));
-  margin: auto;
+.cell{
+ position:relative;min-width:0;min-height:0;
+ padding:0;border-radius:5px;
+ border:1px solid #b9c4d1;
+ background:#e5eaf0;color:#263449;
+ font-size:clamp(8px,2.3vw,12px);
+ font-weight:bold;
+ display:flex;align-items:center;justify-content:center;
 }
-header {
-  background: #0b1022;
-  border-bottom: 1px solid #26365b;
-}.nav {
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.cell.goal-black{background:#f3e3c2}
+.cell.goal-white{background:#d8e8ff}
+.cell.white{background:white;border:3px solid #e4ae3b}
+.cell.black{background:#273348;color:white;border:3px solid #e4ae3b}
+.cell.legal{background:#9be2a9;border:2px solid #26994c}
+.cell.selected{outline:3px solid #24baff;outline-offset:-3px}
+.wall{
+ position:absolute;z-index:5;
+ background:#e6a13b;
+ border:1px solid #754817;
+ border-radius:4px;
+ pointer-events:none;
 }
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
+.wall.horizontal{
+ height:9px;width:calc(200% + 5px);
+ left:0;bottom:-6px;
 }
-.brand-mark {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  font-size: 25px;
-  color: #eafaff;
-  background: linear-gradient(135deg,#36c8ff,#9b6cff);
+.wall.vertical{
+ width:9px;height:calc(200% + 5px);
+ right:-6px;top:0;
 }
-nav {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
+button.control{
+ border:1px solid #526783;border-radius:9px;
+ padding:11px 13px;margin:4px;
+ background:#304663;color:white;
+ font-size:13px;font-weight:bold;
 }
-nav a {
-  color: #aab3cf;
-  font-size: 14px;
-}
-.hero {
-  padding: 70px 0;
-}
-.hero-card {
-  padding: 40px 25px;
-  border: 1px solid #26365b;
-  border-radius: 25px;
-  background: linear-gradient(135deg,#12203e,#1a1034);
-}.eyebrow {
-  color: #36c8ff;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-h1 {
-  font-size: clamp(38px, 8vw, 65px);
-  line-height: 1.1;
-  margin: 15px 0;
-}
-h1 span {
-  display: block;
-  background: linear-gradient(90deg,#65dcff,#a78bff);
-  color: transparent;
-  background-clip: text;
-}
-.intro {
-  color: #aab3cf;
-  max-width: 590px;
-  font-size: 17px;
-}
-.actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 25px;
-}
-.btn {
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: bold;
-}
-.btn-main {
-  color: #080b18;
-  background: linear-gradient(90deg,#54d8ff,#a88aff);
-}
-.btn-alt {
-  border: 1px solid #52628c;
-}
-section {
-  padding: 35px 0;
-}
-.section-title {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-.section-sub {
-  color: #aab3cf;
-}.grid {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 16px;
-}
-.card {
-  padding: 22px;
-  min-height: 170px;
-  border-radius: 18px;
-  border: 1px solid #26365b;
-  background: #11172e;
-}
-.icon {
-  font-size: 27px;
-}
-.card h3 {
-  margin: 10px 0 6px;
-}
-.card p {
-  color: #aab3cf;
-  font-size: 14px;
-}
-.contact {
-  padding: 28px;
-  border: 1px solid #26365b;
-  border-radius: 22px;
-  background: linear-gradient(120deg,#172c4b,#261943);
-}
-footer {
-  border-top: 1px solid #26365b;
-  color: #aab3cf;
-  padding: 24px 0 34px;
-  text-align: center;
-  font-size: 13px;
-}
-@media (max-width:720px) {
-  .nav {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 13px 0;
-  }
-  .hero {
-    padding: 36px 0 55px;
-  }
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
+button.control.active{background:#e3aa43;color:#182235}
+button:disabled{opacity:.4}
+#message{min-height:35px;color:#f5cf70;font-weight:bold;font-size:14px}
+.small{font-size:12px;color:#b6c4d6;line-height:1.6}
 </style>
-</head><body>
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="#dau-trang">
-      <span class="brand-mark">C</span>
-      <span>Hoang Studio</span>
-    </a>
-    <nav>
-      <a href="#gioi-thieu">Giới thiệu</a>
-      <a href="#du-an">Dự án</a>
-      <a href="#cong-nghe">Công nghệ</a>
-      <a href="#lien-he">Liên hệ</a>
-    </nav>
-  </div>
-</header>
+</head>
+<body>
 
-<main id="dau-trang">
-  <div class="wrap hero">
-    <div class="hero-card">
-      <div class="eyebrow">KHÔNG GIAN SÁNG TẠO SỐ</div>
-      <h1>Chào bạn!<span>Hoang Studio</span></h1>
-      <p class="intro">
-        Nơi những ý tưởng công nghệ và thế giới trò chơi được bắt đầu.
-        Cùng khám phá các dự án và hành trình sáng tạo tại đây!
-      </p>
-      <div class="actions">
-        <a class="btn btn-main" href="#du-an">Khám phá dự án</a>
-        <a class="btn btn-alt" href="#gioi-thieu">Tìm hiểu thêm</a>
-      </div>
-    </div>
-  </div>
+<h1>⚔ ĐẤU TRƯỜNG</h1>
+<div class="sub">HOANG STUDIO · TWO PLAYER GAME</div>
 
-  <section id="gioi-thieu">
-    <div class="wrap">
-      <h2 class="section-title">Giới thiệu</h2>
-      <p class="section-sub">Một góc nhỏ dành cho sáng tạo, học hỏi và phát triển.</p>
-      <div class="card">
-        <div class="icon">✨</div>
-        <h3>Xin chào, mình là người đứng sau Hoang Studio</h3>
-        <p>Mình yêu thích công nghệ, lập trình và làm trò chơi.
-        Hoang Studio là nơi lưu lại những sản phẩm mình đang học và từng bước xây dựng.</p>
-      </div>
-    </div>
-  </section><section id="du-an">
-    <div class="wrap">
-      <h2 class="section-title">Dự án</h2>
-      <p class="section-sub">Những sản phẩm đang thực hiện và sẽ được cập nhật.</p>
-      <div class="grid">
-        <article class="card">
-          <div class="icon">🎮</div>
-          <h3>Trò chơi 2D</h3>
-          <p>Các ý tưởng trò chơi do mình tự xây dựng.</p>
-        </article>
-        <article class="card">
-          <div class="icon">🌱</div>
-          <h3>Game nông trại</h3>
-          <p>Dự án trò chơi mô phỏng.</p>
-        </article>
-        <article class="card">
-          <div class="icon">💡</div>
-          <h3>Dự án sắp tới</h3>
-          <p>Nơi giới thiệu những sản phẩm mới.</p>
-        </article>
-      </div>
-    </div>
-  </section>
+<div class="panel">
+ <div id="turn">Trắng chọn vị trí xuất phát</div>
+ <div class="stats">
+  <div class="stat">⚪ TRẮNG<br><b id="whiteWalls">5</b> gạch</div>
+  <div class="stat">⚫ ĐEN<br><b id="blackWalls">5</b> gạch</div>
+ </div>
+ <div id="message">Chọn một ô ở hàng cuối cho Trắng.</div>
+</div>
 
-  <section id="cong-nghe">
-    <div class="wrap">
-      <h2 class="section-title">Công nghệ</h2>
-      <p class="section-sub">Những kỹ năng đang tìm hiểu và rèn luyện.</p>
-      <div class="grid">
-        <article class="card">
-          <div class="icon">🌐</div>
-          <h3>Thiết kế trang web</h3>
-          <p>Xây dựng giao diện cho điện thoại và máy tính.</p>
-        </article>
-        <article class="card">
-          <div class="icon">⌨️</div>
-          <h3>Lập trình</h3>
-          <p>Học cách viết mã và tạo sản phẩm.</p>
-        </article>
-        <article class="card">
-          <div class="icon">🕹️</div>
-          <h3>Phát triển trò chơi</h3>
-          <p>Tìm hiểu cách tạo nhân vật và màn chơi.</p>
-        </article>
-      </div>
-    </div>
-  </section>
+<div class="small">ĐÍCH ĐEN ↑</div>
+<div id="board"></div>
+<div class="small">↓ ĐÍCH TRẮNG</div>
 
-  <section id="lien-he">
-    <div class="wrap">
-      <div class="contact">
-        <h2 class="section-title">Liên hệ</h2>
-        <p class="section-sub">
-          Cùng trao đổi ý tưởng và các dự án sáng tạo nhé!
-        </p>
-        <p>Hoang Studio · Sáng tạo từng bước</p>
-      </div>
-    </div>
-  </section>
-</main>
+<div class="panel">
+ <b>ĐIỀU KHIỂN</b><br>
+ <button class="control active" id="moveBtn">Di chuyển</button>
+ <button class="control" id="hBtn">━ Gạch ngang</button>
+ <button class="control" id="vBtn">┃ Gạch dọc</button>
+ <br>
+ <button class="control" id="confirmBtn">Xác nhận</button>
+ <button class="control" id="cancelBtn">Hủy</button>
+ <button class="control" id="restartBtn">↻ Chơi lại</button>
+</div>
 
-<footer>
-  © 2026 Hoang Studio. Được xây dựng bằng niềm đam mê sáng tạo.
-</footer>
-<div style="text-align:center; margin:30px;">
-  <h2>⚔️ ĐẤU TRƯỜNG 2D</h2>
-  <p>Trò chơi do Hoang Studio phát triển</p>
-  <a href="https://tonltv2102-beep.github.io/Dau-truong-2d-game-tu-lam/game.html"
-     style="display:inline-block; background:#087cff; color:white;
-     padding:15px 30px; border-radius:12px; text-decoration:none;
-     font-weight:bold;">
-     CHƠI NGAY 🎮
-  </a>
-</div> </body>
+<div class="panel small">
+ <b>LUẬT CHƠI</b>
+ <p>• Bàn cờ 8 cột × 9 hàng.</p>
+ <p>• Trắng xuất phát hàng 9, Đen xuất phát hàng 1.</p>
+ <p>• Mỗi lượt di chuyển 1 ô ngang/dọc hoặc đặt 1 gạch.</p>
+ <p>• Không được đi chéo.</p>
+ <p>• Gạch dài 2 cạnh, mỗi người có 5 gạch.</p>
+ <p>• Có thể đặt gạch sát quân đối thủ ở cả 4 phía.</p>
+ <p>• Không được đặt gạch đè lên quân.</p>
+ <p>• Không được chặn hết đường đến đích.</p>
+</div>
+
+<script>
+(()=>{
+"use strict";
+
+const $=id=>document.getElementById(id);
+const board=$("board");
+
+let players=[null,null];
+let walls=[];
+let stock=[5,5];
+let current=0;
+let mode="move";
+let selected=null;
+let stage=0;
+let winner=-1;
+
+const directions=[
+ [1,0],[-1,0],[0,1],[0,-1]
+];
+
+function same(a,b){
+ return a.r===b.r&&a.c===b.c;
+}
+
+// Kiểm tra cạnh có bị gạch chặn không
+function blocked(r,c,nr,nc){
+ for(const w of walls){
+
+  // Gạch ngang: chặn hai cạnh đi lên/xuống
+  if(w.o==="H" && r!==nr &&
+     Math.min(r,nr)===w.r &&
+     (c===w.c||c===w.c+1)){
+   return true;
+  }
+
+  // Gạch dọc: chặn hai cạnh đi trái/phải
+  if(w.o==="V" && c!==nc &&
+     Math.min(c,nc)===w.c &&
+     (r===w.r||r===w.r+1)){
+   return true;
+  }
+ }
+ return false;
+}
+
+// Tìm các ô có thể di chuyển
+function possibleMoves(player){
+ const p=players[player];
+ if(!p)return [];
+
+ let other=players[1-player];
+ let result=[];
+
+ for(const [dr,dc] of directions){
+  let r=p.r+dr,c=p.c+dc;
+
+  if(r<0||r>8||c<0||c>7)continue;
+  if(blocked(p.r,p.c,r,c))continue;
+
+  // Nếu gặp quân đối thủ, thử nhảy thẳng qua
+  if(other&&other.r===r&&other.c===c){
+   let rr=r+dr,cc=c+dc;
+
+   if(rr>=0&&rr<=8&&cc>=0&&cc<=7&&
+      !blocked(r,c,rr,cc)){
+    result.push({r:rr,c:cc});
+   }
+   continue;
+  }
+
+  result.push({r,c});
+ }
+
+ return result;
+}
+
+// Kiểm tra người chơi còn đường tới đích
+function hasPath(player){
+ let start=players[player];
+ if(!start)return true;
+
+ let queue=[start];
+ let visited=new Set([start.r+","+start.c]);
+
+ while(queue.length){
+  let p=queue.shift();
+
+  if(player===0&&p.r===0)return true;
+  if(player===1&&p.r===8)return true;
+
+  for(const [dr,dc] of directions){
+   let r=p.r+dr,c=p.c+dc;
+   let k=r+","+c;
+
+   if(r<0||r>8||c<0||c>7)continue;
+   if(visited.has(k))continue;
+   if(blocked(p.r,p.c,r,c))continue;
+
+   visited.add(k);
+   queue.push({r,c});
+  }
+ }
+
+ return false;
+}
+
+// Kiểm tra vị trí đặt gạch
+function validWall(r,c,o){
+ if(r<0||r>7||c<0||c>6)return false;
+
+ for(const w of walls){
+
+  // Không cho hai gạch giao nhau
+  if(w.r===r&&w.c===c&&w.o!==o)return false;
+
+  // Không cho gạch cùng hướng chồng lên nhau
+  if(o==="H"&&w.o==="H"&&w.r===r&&Math.abs(w.c-c)<2)
+   return false;
+
+  if(o==="V"&&w.o==="V"&&w.c===c&&Math.abs(w.r-r)<2)
+   return false;
+ }
+
+ // Gạch nằm trên cạnh giữa các ô.
+ // Vì vậy được phép sát quân, nhưng không thể đè lên quân.
+ walls.push({r,c,o});
+
+ const valid=hasPath(0)&&hasPath(1);
+
+ walls.pop();
+ return valid;
+}
+
+function render(){
+ board.innerHTML="";
+
+ for(let r=0;r<9;r++){
+  for(let c=0;c<8;c++){
+
+   const cell=document.createElement("button");
+   cell.className="cell";
+
+   if(r===0)cell.classList.add("goal-black");
+   if(r===8)cell.classList.add("goal-white");
+
+   const piece=players.findIndex(p=>p&&p.r===r&&p.c===c);
+
+   if(piece===0){
+    cell.classList.add("white");
+    cell.textContent="TRẮNG";
+   }else if(piece===1){
+    cell.classList.add("black");
+    cell.textContent="ĐEN";
+   }else if(stage===2&&mode==="move"){
+    if(possibleMoves(current).some(p=>p.r===r&&p.c===c)){
+     cell.classList.add("legal");
+     cell.textContent="●";
+    }
+   }
+
+   if(selected&&selected.r===r&&selected.c===c){
+    cell.classList.add("selected");
+   }
+
+   // Hiển thị gạch ngang
+   const horizontal=walls.some(w=>
+    w.o==="H"&&w.r===r&&w.c===c
+   );
+
+   // Hiển thị gạch dọc
+   const vertical=walls.some(w=>
+    w.o==="V"&&w.r===r&&w.c===c
+   );
+
+   if(horizontal){
+    const span=document.createElement("span");
+    span.className="wall horizontal";
+    cell.appendChild(span);
+   }
+
+   if(vertical){
+    const span=document.createElement("span");
+    span.className="wall vertical";
+    cell.appendChild(span);
+   }
+
+   cell.addEventListener("click",()=>tap(r,c));
+   board.appendChild(cell);
+  }
+ }
+
+ $("whiteWalls").textContent=stock[0];
+ $("blackWalls").textContent=stock[1];
+
+ if(winner!==-1){
+  $("turn").textContent="KẾT THÚC";
+ }else if(stage===0){
+  $("turn").textContent="Trắng chọn vị trí xuất phát";
+ }else if(stage===1){
+  $("turn").textContent="Đen chọn vị trí xuất phát";
+ }else{
+  $("turn").textContent="Lượt "+(current===0?"⚪ Trắng":"⚫ Đen");
+ }
+
+ ["moveBtn","hBtn","vBtn"].forEach(id=>{
+  $(id).classList.toggle("active",
+   (id==="moveBtn"&&mode==="move")||
+   (id==="hBtn"&&mode==="H")||
+   (id==="vBtn"&&mode==="V")
+  );
+ });
+}
+
+// Xử lý chạm bàn cờ
+function tap(r,c){
+ if(winner!==-1)return;
+
+ // Chọn vị trí xuất phát
+ if(stage<2){
+  if(stage===0&&r!==8)return;
+  if(stage===1&&r!==0)return;
+
+  selected={r,c};
+  $("message").textContent=
+   "Đã chọn cột "+(c+1)+". Nhấn Xác nhận.";
+  render();
+  return;
+ }
+
+ // Chế độ di chuyển
+ if(mode==="move"){
+  const moves=possibleMoves(current);
+
+  if(!moves.some(p=>p.r===r&&p.c===c)){
+   $("message").textContent="Ô này không thể di chuyển tới.";
+   return;
+  }
+
+  players[current]={r,c};
+  selected=null;
+
+  if(current===0&&r===0){
+   winner=0;
+  }else if(current===1&&r===8){
+   winner=1;
+  }else{
+   current=1-current;
+  }
+
+  if(winner!==-1){
+   $("message").textContent=
+    (winner===0?"TRẮNG":"ĐEN")+" CHIẾN THẮNG!";
+  }else{
+   $("message").textContent="Di chuyển thành công!";
+  }
+
+  render();
+  return;
+ }
+
+ // Chế độ đặt gạch
+ selected={r,c};
+
+ if(r>7||c>6){
+  $("message").textContent="Vị trí không hợp lệ.";
+ }else if(stock[current]<=0){
+  $("message").textContent="Bạn đã hết gạch.";
+ }else if(validWall(r,c,mode)){
+  $("message").textContent=
+   "Vị trí hợp lệ. Nhấn Xác nhận để đặt gạch.";
+ }else{
+  $("message").textContent=
+   "Không thể đặt gạch tại vị trí này.";
+ }
+
+ render();
+}
+
+// Xác nhận
+$("confirmBtn").onclick=()=>{
+ if(winner!==-1||!selected)return;
+
+ // Xác nhận vị trí bắt đầu
+ if(stage<2){
+  if(stage===0){
+   players[0]={...selected};
+   stage=1;
+   $("message").textContent="Đến lượt Đen chọn vị trí xuất phát.";
+  }else{
+   players[1]={...selected};
+   stage=2;
+   current=0;
+   $("message").textContent="Bắt đầu trận đấu! Trắng đi trước.";
+  }
+
+  selected=null;
+  render();
+  return;
+ }
+
+ // Xác nhận đặt gạch
+ if(mode==="move")return;
+
+ if(stock[current]<=0){
+  $("message").textContent="Bạn đã hết gạch.";
+  return;
+ }
+
+ const {r,c}=selected;
+
+ if(!validWall(r,c,mode)){
+  $("message").textContent="Vị trí đặt gạch không hợp lệ.";
+  return;
+ }
+
+ walls.push({r,c,o:mode});
+ stock[current]--;
+
+ selected=null;
+ mode="move";
+ current=1-current;
+
+ $("message").textContent="Đặt gạch thành công!";
+ render();
+};
+
+$("moveBtn").onclick=()=>{
+ if(stage!==2||winner!==-1)return;
+ mode="move";
+ selected=null;
+ render();
+};
+
+$("hBtn").onclick=()=>{
+ if(stage!==2||winner!==-1)return;
+ mode="H";
+ selected=null;
+ render();
+ $("message").textContent="Chọn vị trí đặt gạch ngang.";
+};
+
+$("vBtn").onclick=()=>{
+ if(stage!==2||winner!==-1)return;
+ mode="V";
+ selected=null;
+ render();
+ $("message").textContent="Chọn vị trí đặt gạch dọc.";
+};
+
+$("cancelBtn").onclick=()=>{
+ selected=null;
+ render();
+ $("message").textContent="Đã hủy lựa chọn.";
+};
+
+$("restartBtn").onclick=()=>{
+ players=[null,null];
+ walls=[];
+ stock=[5,5];
+ current=0;
+ mode="move";
+ selected=null;
+ stage=0;
+ winner=-1;
+ $("message").textContent="Chọn vị trí xuất phát cho Trắng.";
+ render();
+};
+
+render();
+})();
+</script>
+</body>
 </html>
